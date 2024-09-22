@@ -11,6 +11,8 @@ import android.view.View;
 import android.widget.TextView;
 import android.widget.ImageButton;
 import android.widget.Toast; // 添加这行
+import android.widget.SeekBar;  // 添加这行
+import android.os.Handler;  // 添加这行
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.Fragment;
@@ -50,6 +52,11 @@ public class MainActivity extends AppCompatActivity implements BottomNavigationV
     private ImageButton playModeButton;
     private int playMode = 0; // 0: 列表循环, 1: 单曲循环, 2: 随机播放
 
+    private SeekBar seekBar;
+    private TextView currentTimeView;
+    private TextView totalTimeView;
+    private Handler handler = new Handler();
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -73,13 +80,62 @@ public class MainActivity extends AppCompatActivity implements BottomNavigationV
         previousButton = findViewById(R.id.previous_button);
         nextButton = findViewById(R.id.next_button);
         playModeButton = findViewById(R.id.play_mode_button);
+        seekBar = findViewById(R.id.seek_bar);
+        currentTimeView = findViewById(R.id.current_time);
+        totalTimeView = findViewById(R.id.total_time);
 
         playPauseButton.setOnClickListener(v -> togglePlayPause());
         previousButton.setOnClickListener(v -> playPrevious());
         nextButton.setOnClickListener(v -> playNext());
         playModeButton.setOnClickListener(v -> changePlayMode());
 
+        seekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            @Override
+            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+                if (fromUser && serviceBound && playbackService != null) {
+                    playbackService.seekTo(progress);
+                }
+            }
+
+            @Override
+            public void onStartTrackingTouch(SeekBar seekBar) {}
+
+            @Override
+            public void onStopTrackingTouch(SeekBar seekBar) {}
+        });
+
+        // 启动进度更新任务
+        startProgressUpdate();
+
         // ... 其他现有的代码 ...
+    }
+
+    private void startProgressUpdate() {
+        handler.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                if (serviceBound && playbackService != null) {
+                    int currentPosition = playbackService.getCurrentPosition();
+                    int duration = playbackService.getDuration();
+                    updateProgressBar(currentPosition, duration);
+                }
+                handler.postDelayed(this, 1000);
+            }
+        }, 1000);
+    }
+
+    private void updateProgressBar(int currentPosition, int duration) {
+        seekBar.setMax(duration);
+        seekBar.setProgress(currentPosition);
+        currentTimeView.setText(formatTime(currentPosition));
+        totalTimeView.setText(formatTime(duration));
+    }
+
+    private String formatTime(int milliseconds) {
+        int seconds = milliseconds / 1000;
+        int minutes = seconds / 60;
+        seconds = seconds % 60;
+        return String.format("%02d:%02d", minutes, seconds);
     }
 
     @Override
@@ -112,6 +168,7 @@ public class MainActivity extends AppCompatActivity implements BottomNavigationV
     @Override
     protected void onDestroy() {
         super.onDestroy();
+        handler.removeCallbacksAndMessages(null);
         if (serviceBound) {
             unbindService(serviceConnection);
             serviceBound = false;

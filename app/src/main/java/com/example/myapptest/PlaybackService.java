@@ -144,6 +144,18 @@ public class PlaybackService extends Service implements MediaPlayer.OnCompletion
         return "";
     }
 
+    public int getCurrentPosition() {
+        return mediaPlayer.getCurrentPosition();
+    }
+
+    public int getDuration() {
+        return mediaPlayer.getDuration();
+    }
+
+    public void seekTo(int position) {
+        mediaPlayer.seekTo(position);
+    }
+
     @Override
     public void onDestroy() {
         super.onDestroy();
