@@ -12,6 +12,14 @@
         android:textSize="24sp"
         android:layout_marginBottom="16dp"/>
 
+    <!-- 添加搜索框 -->
+    <EditText
+        android:id="@+id/search_bar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="搜索音乐"
+        android:layout_marginBottom="16dp"/>
+
     <ListView
         android:id="@+id/playlist_view"
         android:layout_width="match_parent"

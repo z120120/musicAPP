@@ -7,6 +7,9 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ListView;
 import android.widget.Toast;
+import android.widget.EditText; // Import EditText for search bar
+import android.text.Editable;
+import android.text.TextWatcher;
 
 import androidx.fragment.app.Fragment;
 
@@ -19,18 +22,36 @@ public class PlaylistFragment extends Fragment {
     private ListView playlistView;
     private List<Music> playlistSongs;
     private PlaylistAdapter adapter;
+    private EditText searchBar; // 添加搜索框
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_playlist, container, false);
 
         playlistView = view.findViewById(R.id.playlist_view);
+        searchBar = view.findViewById(R.id.search_bar); // 初始化搜索框
         playlistSongs = new ArrayList<>();
 
         loadPlaylistFromDatabase();
 
         playlistView.setOnItemClickListener((parent, view1, position, id) -> {
-            playMusic(position);
+            Music selectedMusic = adapter.getItem(position);
+            int originalPosition = playlistSongs.indexOf(selectedMusic);
+            playMusic(originalPosition);
+        });
+
+        // 添加搜索框的监听器
+        searchBar.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                adapter.getFilter().filter(s);
+            }
+
+            @Override
+            public void afterTextChanged(Editable s) {}
         });
 
         return view;
