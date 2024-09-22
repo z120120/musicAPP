@@ -7,6 +7,7 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.util.Log; // 添加这行
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
@@ -22,13 +23,16 @@ import java.util.List;
 
 public class MusicScanActivity extends AppCompatActivity {
 
+    private static final String TAG = "MusicScanActivity";
+
     private static final int REQUEST_PERMISSION_CODE = 1;
     private static final int REQUEST_DIRECTORY = 2;
+    public static final String ACTION_MUSIC_SCAN_COMPLETED = "com.example.myapptest.MUSIC_SCAN_COMPLETED";
 
     private Button selectFolderButton;
     private TextView scanStatusTextView;
     private TextView scannedFilesTextView;
-    private List<String> musicFiles;
+    private List<Music> musicFiles;
     private Handler mainHandler;
 
     @Override
@@ -106,12 +110,23 @@ public class MusicScanActivity extends AppCompatActivity {
         MusicDao musicDao = db.musicDao();
 
         new Thread(() -> {
-            musicDao.deleteAll(); // 清空之前的数据
-            for (String fileName : musicFiles) {
-                Music music = new Music(fileName, ""); // 这里暂时没有保存文件路径
-                musicDao.insert(music);
+            try {
+                musicDao.deleteAll(); // 清空之前的数据
+                for (Music music : musicFiles) {
+                    musicDao.insert(music);
+                }
+                runOnUiThread(() -> {
+                    Toast.makeText(this, "音乐信息已保存到数据库", Toast.LENGTH_SHORT).show();
+                    // 发送广播通知扫描完成
+                    Intent intent = new Intent(ACTION_MUSIC_SCAN_COMPLETED);
+                    sendBroadcast(intent);
+                });
+            } catch (Exception e) {
+                Log.e(TAG, "saveMusicToDatabase: 保存音乐信息失败", e);
+                runOnUiThread(() -> 
+                    Toast.makeText(this, "保存音乐信息失败: " + e.getMessage(), Toast.LENGTH_LONG).show()
+                );
             }
-            runOnUiThread(() -> Toast.makeText(this, "音乐信息已保存到数据库", Toast.LENGTH_SHORT).show());
         }).start();
     }
 
@@ -123,7 +138,8 @@ public class MusicScanActivity extends AppCompatActivity {
                 scanDirectory(file);
             } else if (isMusicFile(file.getName())) {
                 String fileName = file.getName();
-                musicFiles.add(fileName);
+                String filePath = file.getUri().toString(); // 获取文件的 URI
+                musicFiles.add(new Music(fileName, filePath));
                 mainHandler.post(() -> {
                     scanStatusTextView.setText("已扫描到 " + musicFiles.size() + " 个音乐文件");
                     scannedFilesTextView.append(fileName + "\n");

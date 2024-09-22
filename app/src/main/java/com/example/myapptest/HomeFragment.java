@@ -21,8 +21,9 @@ public class HomeFragment extends Fragment {
 
         Button musicLibraryButton = view.findViewById(R.id.btn_music_library);
         musicLibraryButton.setOnClickListener(v -> {
+            Fragment fragment = new MusicLibraryFragment();
             getParentFragmentManager().beginTransaction()
-                    .replace(R.id.fragment_container, new MusicLibraryFragment())
+                    .replace(R.id.fragment_container, fragment)
                     .addToBackStack(null)
                     .commit();
         });

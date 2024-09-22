@@ -29,6 +29,10 @@ public class PlaylistFragment extends Fragment {
 
         loadPlaylistFromDatabase();
 
+        playlistView.setOnItemClickListener((parent, view1, position, id) -> {
+            playMusic(position);
+        });
+
         return view;
     }
 
@@ -64,6 +68,13 @@ public class PlaylistFragment extends Fragment {
                 }
             }
         }).start();
+    }
+
+    private void playMusic(int position) {
+        MainActivity activity = (MainActivity) getActivity();
+        if (activity != null) {
+            activity.playMusic(playlistSongs, position);
+        }
     }
 
     private void updatePlaylistView() {
