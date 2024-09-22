@@ -31,11 +31,13 @@ public class MainActivity extends AppCompatActivity implements BottomNavigationV
             PlaybackService.LocalBinder binder = (PlaybackService.LocalBinder) service;
             playbackService = binder.getService();
             serviceBound = true;
+            Log.d(TAG, "onServiceConnected: PlaybackService 已绑定");
         }
 
         @Override
         public void onServiceDisconnected(ComponentName name) {
             serviceBound = false;
+            Log.d(TAG, "onServiceDisconnected: PlaybackService 连接断开");
         }
     };
 
@@ -58,6 +60,7 @@ public class MainActivity extends AppCompatActivity implements BottomNavigationV
         Intent intent = new Intent(this, PlaybackService.class);
         startService(intent);
         bindService(intent, serviceConnection, Context.BIND_AUTO_CREATE);
+        Log.d(TAG, "onCreate: 尝试绑定 PlaybackService");
 
         miniPlayer = findViewById(R.id.mini_player);
         songTitleView = findViewById(R.id.song_title);
@@ -103,10 +106,13 @@ public class MainActivity extends AppCompatActivity implements BottomNavigationV
     }
 
     public void playMusic(List<Music> playlist, int position) {
+        Log.d(TAG, "playMusic: 尝试播放音乐，播放列表大小: " + playlist.size() + ", 位置: " + position);
         if (serviceBound && playbackService != null) {
             playbackService.setPlaylist(playlist);
+            playbackService.setCurrentIndex(position); // 添加这行以设置当前播放索引
             playbackService.play();
             updateMiniPlayer(playlist.get(position).title);
+            Log.d(TAG, "playMusic: 已调用 PlaybackService 的 play 方法");
         } else {
             Log.e(TAG, "PlaybackService not bound or null");
         }

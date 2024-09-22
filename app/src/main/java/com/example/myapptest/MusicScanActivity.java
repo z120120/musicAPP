@@ -83,6 +83,10 @@ public class MusicScanActivity extends AppCompatActivity {
         super.onActivityResult(requestCode, resultCode, data);
         if (requestCode == REQUEST_DIRECTORY && resultCode == RESULT_OK) {
             Uri treeUri = data.getData();
+            // 申请持久URI权限
+            final int takeFlags = data.getFlags()
+                    & (Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
+            getContentResolver().takePersistableUriPermission(treeUri, takeFlags);
             scanMusicFiles(treeUri);
         }
     }
@@ -139,6 +143,7 @@ public class MusicScanActivity extends AppCompatActivity {
             } else if (isMusicFile(file.getName())) {
                 String fileName = file.getName();
                 String filePath = file.getUri().toString(); // 获取文件的 URI
+                Log.d(TAG, "scanDirectory: 发现音乐文件 " + fileName + ", 路径: " + filePath);
                 musicFiles.add(new Music(fileName, filePath));
                 mainHandler.post(() -> {
                     scanStatusTextView.setText("已扫描到 " + musicFiles.size() + " 个音乐文件");
@@ -149,6 +154,7 @@ public class MusicScanActivity extends AppCompatActivity {
     }
 
     private boolean isMusicFile(String fileName) {
-        return fileName != null && (fileName.endsWith(".mp3") || fileName.endsWith(".wav") || fileName.endsWith(".flac"));
+        return fileName != null && (fileName.endsWith(".mp3") || fileName.endsWith(".wav") || 
+               fileName.endsWith(".ogg") || fileName.endsWith(".m4a") || fileName.endsWith(".aac"));
     }
 }

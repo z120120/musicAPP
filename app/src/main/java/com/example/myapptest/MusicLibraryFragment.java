@@ -1,5 +1,6 @@
 package com.example.myapptest;
 
+import android.app.AlertDialog;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -66,7 +67,7 @@ public class MusicLibraryFragment extends Fragment {
         musicListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                addMusicToPlaylist(position);
+                showMusicDetails(position);
             }
         });
     }
@@ -170,6 +171,7 @@ public class MusicLibraryFragment extends Fragment {
                 if (isAdded() && getActivity() != null) {
                     getActivity().runOnUiThread(() -> {
                         Toast.makeText(requireContext(), "已将音乐添加到播放列表", Toast.LENGTH_SHORT).show();
+                        Log.d(TAG, "addMusicToPlaylist: 尝试播放音乐，位置: " + position);
                         ((MainActivity) getActivity()).playMusic(musicList, position);
                     });
                 }
@@ -227,5 +229,31 @@ public class MusicLibraryFragment extends Fragment {
                 }
             }
         }).start();
+    }
+
+    private void showMusicDetails(int position) {
+        if (position < 0 || position >= musicList.size()) {
+            Log.e(TAG, "showMusicDetails: Invalid position");
+            return;
+        }
+
+        Music selectedMusic = musicList.get(position);
+        AlertDialog.Builder builder = new AlertDialog.Builder(requireContext());
+        builder.setTitle("音乐详情");
+
+        String message = "标题: " + selectedMusic.title + "\n" +
+                         "文件路径: " + selectedMusic.filePath;
+
+        builder.setMessage(message);
+
+        builder.setPositiveButton("播放", (dialog, which) -> {
+            addMusicToPlaylist(position);
+        });
+
+        builder.setNegativeButton("取消", (dialog, which) -> {
+            dialog.dismiss();
+        });
+
+        builder.show();
     }
 }
