@@ -21,7 +21,7 @@ import android.util.Log;  // 添加这行
 
 import java.util.List;
 
-public class MainActivity extends AppCompatActivity implements BottomNavigationView.OnNavigationItemSelectedListener {
+public class MainActivity extends AppCompatActivity implements BottomNavigationView.OnNavigationItemSelectedListener, PlaybackService.OnSongChangeListener {
 
     private static final String TAG = "MainActivity";
 
@@ -35,6 +35,9 @@ public class MainActivity extends AppCompatActivity implements BottomNavigationV
             playbackService = binder.getService();
             serviceBound = true;
             Log.d(TAG, "onServiceConnected: PlaybackService 已绑定");
+            
+            // 设置歌曲变化监听器
+            playbackService.setOnSongChangeListener(MainActivity.this);
         }
 
         @Override
@@ -201,9 +204,11 @@ public class MainActivity extends AppCompatActivity implements BottomNavigationV
     }
 
     private void updateMiniPlayer(String songTitle) {
-        songTitleView.setText(songTitle);
-        miniPlayer.setVisibility(View.VISIBLE);
-        playPauseButton.setImageResource(R.drawable.ic_pause);
+        runOnUiThread(() -> {
+            songTitleView.setText(songTitle);
+            miniPlayer.setVisibility(View.VISIBLE);
+            playPauseButton.setImageResource(R.drawable.ic_pause);
+        });
     }
 
     private void playPrevious() {
@@ -239,5 +244,10 @@ public class MainActivity extends AppCompatActivity implements BottomNavigationV
         if (serviceBound && playbackService != null) {
             playbackService.setPlayMode(playMode);
         }
+    }
+
+    @Override
+    public void onSongChange(String title) {
+        updateMiniPlayer(title);
     }
 }
