@@ -96,8 +96,22 @@ public class MusicScanActivity extends AppCompatActivity {
             scanDirectory(pickedDir);
             mainHandler.post(() -> {
                 scanStatusTextView.setText("扫描完成，共找到 " + musicFiles.size() + " 个音乐文件");
-                // TODO: 将音乐文件信息保存到数据库
+                saveMusicToDatabase();
             });
+        }).start();
+    }
+
+    private void saveMusicToDatabase() {
+        AppDatabase db = AppDatabase.getDatabase(this);
+        MusicDao musicDao = db.musicDao();
+
+        new Thread(() -> {
+            musicDao.deleteAll(); // 清空之前的数据
+            for (String fileName : musicFiles) {
+                Music music = new Music(fileName, ""); // 这里暂时没有保存文件路径
+                musicDao.insert(music);
+            }
+            runOnUiThread(() -> Toast.makeText(this, "音乐信息已保存到数据库", Toast.LENGTH_SHORT).show());
         }).start();
     }
 

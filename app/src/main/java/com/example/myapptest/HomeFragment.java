@@ -19,6 +19,14 @@ public class HomeFragment extends Fragment {
             startActivity(intent);
         });
 
+        Button musicLibraryButton = view.findViewById(R.id.btn_music_library);
+        musicLibraryButton.setOnClickListener(v -> {
+            getParentFragmentManager().beginTransaction()
+                    .replace(R.id.fragment_container, new MusicLibraryFragment())
+                    .addToBackStack(null)
+                    .commit();
+        });
+
         return view;
     }
 }
