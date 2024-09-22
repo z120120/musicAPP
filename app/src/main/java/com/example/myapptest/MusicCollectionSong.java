@@ -15,7 +15,8 @@ import androidx.room.Index;
         @ForeignKey(
             entity = Music.class,
             parentColumns = "id",
-            childColumns = "musicId"
+            childColumns = "musicId",
+            onDelete = ForeignKey.CASCADE // 添加这个以确保删除Music时相关联的MusicCollectionSong也被删除
         )
     },
     indices = {@Index("musicId")} // 添加这一行来创建索引

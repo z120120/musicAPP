@@ -67,7 +67,11 @@ public class MusicLibraryFragment extends Fragment {
         musicListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                showMusicDetails(position);
+                // 移除弹出音乐详情对话框
+                // showMusicDetails(position);
+                
+                // 添加音乐到播放列表并播放
+                addMusicToPlaylistAndPlay(position);
             }
         });
     }
@@ -139,9 +143,9 @@ public class MusicLibraryFragment extends Fragment {
         }
     }
 
-    private void addMusicToPlaylist(int position) {
+    private void addMusicToPlaylistAndPlay(int position) {
         if (position < 0 || position >= musicList.size()) {
-            Log.e(TAG, "addMusicToPlaylist: Invalid position");
+            Log.e(TAG, "addMusicToPlaylistAndPlay: 无效的位置");
             return;
         }
 
@@ -151,6 +155,7 @@ public class MusicLibraryFragment extends Fragment {
 
         new Thread(() -> {
             try {
+                // 获取默认的音乐集合
                 MusicCollection defaultCollection = musicDao.getDefaultCollection();
                 if (defaultCollection == null) {
                     defaultCollection = new MusicCollection("Default Collection", true);
@@ -158,25 +163,27 @@ public class MusicLibraryFragment extends Fragment {
                     defaultCollection.id = (int) collectionId;
                 }
 
+                // 创建并插入 MusicCollectionSong
                 MusicCollectionSong collectionSong = new MusicCollectionSong(defaultCollection.id, selectedMusic.id, 0);
                 musicDao.insertMusicCollectionSong(collectionSong);
 
+                // 获取或创建 PlayQueue
                 PlayQueue playQueue = musicDao.getPlayQueue();
                 if (playQueue == null) {
                     playQueue = new PlayQueue();
                     musicDao.insertPlayQueue(playQueue);
                 }
-                musicDao.updatePlayQueueIndex(0);
+                musicDao.updatePlayQueueIndex(position); // 将 currentIndex 修改为 position
 
                 if (isAdded() && getActivity() != null) {
                     getActivity().runOnUiThread(() -> {
                         Toast.makeText(requireContext(), "已将音乐添加到播放列表", Toast.LENGTH_SHORT).show();
-                        Log.d(TAG, "addMusicToPlaylist: 尝试播放音乐，位置: " + position);
+                        Log.d(TAG, "addMusicToPlaylistAndPlay: 尝试播放音乐，位置: " + position);
                         ((MainActivity) getActivity()).playMusic(musicList, position);
                     });
                 }
             } catch (Exception e) {
-                Log.e(TAG, "Error adding music to playlist", e);
+                Log.e(TAG, "addMusicToPlaylistAndPlay: 添加音乐到播放列表失败", e);
                 if (isAdded() && getActivity() != null) {
                     getActivity().runOnUiThread(() -> 
                         Toast.makeText(requireContext(), "添加音乐到播放列表失败: " + e.getMessage(), Toast.LENGTH_SHORT).show()
@@ -229,31 +236,5 @@ public class MusicLibraryFragment extends Fragment {
                 }
             }
         }).start();
-    }
-
-    private void showMusicDetails(int position) {
-        if (position < 0 || position >= musicList.size()) {
-            Log.e(TAG, "showMusicDetails: Invalid position");
-            return;
-        }
-
-        Music selectedMusic = musicList.get(position);
-        AlertDialog.Builder builder = new AlertDialog.Builder(requireContext());
-        builder.setTitle("音乐详情");
-
-        String message = "标题: " + selectedMusic.title + "\n" +
-                         "文件路径: " + selectedMusic.filePath;
-
-        builder.setMessage(message);
-
-        builder.setPositiveButton("播放", (dialog, which) -> {
-            addMusicToPlaylist(position);
-        });
-
-        builder.setNegativeButton("取消", (dialog, which) -> {
-            dialog.dismiss();
-        });
-
-        builder.show();
     }
 }
