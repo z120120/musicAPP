@@ -22,12 +22,7 @@ public class PlaybackService extends Service implements MediaPlayer.OnCompletion
     private int currentIndex = 0;
     private int playMode = 0; // 0: 列表循环, 1: 单曲循环, 2: 随机播放
     private Random random = new Random();
-
-    public interface OnSongChangeListener {
-        void onSongChange(String title);
-    }
-
-    private OnSongChangeListener onSongChangeListener;
+    private int lastPosition = 0; // 添加这个字段来保存暂停时的位置
 
     public class LocalBinder extends Binder {
         PlaybackService getService() {
@@ -58,12 +53,19 @@ public class PlaybackService extends Service implements MediaPlayer.OnCompletion
 
     public void play() {
         if (playlist != null && !playlist.isEmpty()) {
-            playMusic(currentIndex);
+            if (lastPosition > 0) {
+                mediaPlayer.seekTo(lastPosition); // 从暂停的位置继续播放
+                mediaPlayer.start();
+                lastPosition = 0; // 重置 lastPosition
+            } else {
+                playMusic(currentIndex);
+            }
         }
     }
 
     public void pause() {
         if (mediaPlayer.isPlaying()) {
+            lastPosition = mediaPlayer.getCurrentPosition(); // 保存当前播放位置
             mediaPlayer.pause();
         }
     }
@@ -105,14 +107,26 @@ public class PlaybackService extends Service implements MediaPlayer.OnCompletion
                 break;
             case 2: // 随机播放
                 int nextIndex = random.nextInt(playlist.size());
-                currentIndex = nextIndex;
                 playMusic(nextIndex);
                 break;
         }
     }
 
+    // 添加 OnSongChangeListener 接口
+    public interface OnSongChangeListener {
+        void onSongChange(String title);
+    }
+
+    private OnSongChangeListener songChangeListener;
+
     public void setOnSongChangeListener(OnSongChangeListener listener) {
-        this.onSongChangeListener = listener;
+        this.songChangeListener = listener;
+    }
+
+    private void notifySongChange(String title) {
+        if (songChangeListener != null) {
+            songChangeListener.onSongChange(title);
+        }
     }
 
     private void playMusic(int index) {
@@ -128,10 +142,7 @@ public class PlaybackService extends Service implements MediaPlayer.OnCompletion
                 mediaPlayer.setOnPreparedListener(mp -> {
                     mp.start();
                     Log.d(TAG, "playMusic: 音乐开始播放");
-                    // 在这里调用监听器
-                    if (onSongChangeListener != null) {
-                        onSongChangeListener.onSongChange(music.title);
-                    }
+                    notifySongChange(music.title); // 通知歌曲变化
                 });
             } catch (IOException e) {
                 e.printStackTrace();
