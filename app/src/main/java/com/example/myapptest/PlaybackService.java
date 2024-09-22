@@ -10,8 +10,9 @@ import android.util.Log;  // 添加这行
 import androidx.annotation.Nullable;
 import java.io.IOException;
 import java.util.List;
+import java.util.Random;
 
-public class PlaybackService extends Service {
+public class PlaybackService extends Service implements MediaPlayer.OnCompletionListener {
 
     private static final String TAG = "PlaybackService";  // 添加这行
 
@@ -19,6 +20,8 @@ public class PlaybackService extends Service {
     private MediaPlayer mediaPlayer;
     private List<Music> playlist;
     private int currentIndex = 0;
+    private int playMode = 0; // 0: 列表循环, 1: 单曲循环, 2: 随机播放
+    private Random random = new Random();
 
     public class LocalBinder extends Binder {
         PlaybackService getService() {
@@ -30,6 +33,7 @@ public class PlaybackService extends Service {
     public void onCreate() {
         super.onCreate();
         mediaPlayer = new MediaPlayer();
+        mediaPlayer.setOnCompletionListener(this);
         mediaPlayer.setOnErrorListener((mp, what, extra) -> {
             Log.e(TAG, "MediaPlayer error: what=" + what + ", extra=" + extra);
             return false;
@@ -60,15 +64,43 @@ public class PlaybackService extends Service {
 
     public void next() {
         if (playlist != null && !playlist.isEmpty()) {
-            currentIndex = (currentIndex + 1) % playlist.size();
+            if (playMode == 2) { // 随机播放
+                currentIndex = random.nextInt(playlist.size());
+            } else {
+                currentIndex = (currentIndex + 1) % playlist.size();
+            }
             playMusic(currentIndex);
         }
     }
 
     public void previous() {
         if (playlist != null && !playlist.isEmpty()) {
-            currentIndex = (currentIndex - 1 + playlist.size()) % playlist.size();
+            if (playMode == 2) { // 随机播放
+                currentIndex = random.nextInt(playlist.size());
+            } else {
+                currentIndex = (currentIndex - 1 + playlist.size()) % playlist.size();
+            }
             playMusic(currentIndex);
+        }
+    }
+
+    public void setPlayMode(int mode) {
+        this.playMode = mode;
+    }
+
+    @Override
+    public void onCompletion(MediaPlayer mp) {
+        switch (playMode) {
+            case 0: // 列表循环
+                next();
+                break;
+            case 1: // 单曲循环
+                playMusic(currentIndex);
+                break;
+            case 2: // 随机播放
+                int nextIndex = random.nextInt(playlist.size());
+                playMusic(nextIndex);
+                break;
         }
     }
 
@@ -103,6 +135,13 @@ public class PlaybackService extends Service {
     // 添加这个方法
     public boolean isPlaying() {
         return mediaPlayer != null && mediaPlayer.isPlaying();
+    }
+
+    public String getCurrentSongTitle() {
+        if (playlist != null && currentIndex >= 0 && currentIndex < playlist.size()) {
+            return playlist.get(currentIndex).title;
+        }
+        return "";
     }
 
     @Override

@@ -10,6 +10,7 @@ import android.content.ServiceConnection;
 import android.view.View;
 import android.widget.TextView;
 import android.widget.ImageButton;
+import android.widget.Toast; // 添加这行
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.Fragment;
@@ -44,6 +45,10 @@ public class MainActivity extends AppCompatActivity implements BottomNavigationV
     private View miniPlayer;
     private TextView songTitleView;
     private ImageButton playPauseButton;
+    private ImageButton previousButton;
+    private ImageButton nextButton;
+    private ImageButton playModeButton;
+    private int playMode = 0; // 0: 列表循环, 1: 单曲循环, 2: 随机播放
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -65,8 +70,16 @@ public class MainActivity extends AppCompatActivity implements BottomNavigationV
         miniPlayer = findViewById(R.id.mini_player);
         songTitleView = findViewById(R.id.song_title);
         playPauseButton = findViewById(R.id.play_pause_button);
+        previousButton = findViewById(R.id.previous_button);
+        nextButton = findViewById(R.id.next_button);
+        playModeButton = findViewById(R.id.play_mode_button);
 
         playPauseButton.setOnClickListener(v -> togglePlayPause());
+        previousButton.setOnClickListener(v -> playPrevious());
+        nextButton.setOnClickListener(v -> playNext());
+        playModeButton.setOnClickListener(v -> changePlayMode());
+
+        // ... 其他现有的代码 ...
     }
 
     @Override
@@ -134,5 +147,40 @@ public class MainActivity extends AppCompatActivity implements BottomNavigationV
         songTitleView.setText(songTitle);
         miniPlayer.setVisibility(View.VISIBLE);
         playPauseButton.setImageResource(R.drawable.ic_pause);
+    }
+
+    private void playPrevious() {
+        if (serviceBound && playbackService != null) {
+            playbackService.previous();
+            updateMiniPlayer(playbackService.getCurrentSongTitle());
+        }
+    }
+
+    private void playNext() {
+        if (serviceBound && playbackService != null) {
+            playbackService.next();
+            updateMiniPlayer(playbackService.getCurrentSongTitle());
+        }
+    }
+
+    private void changePlayMode() {
+        playMode = (playMode + 1) % 3;
+        switch (playMode) {
+            case 0:
+                playModeButton.setImageResource(R.drawable.ic_repeat);
+                Toast.makeText(this, "列表循环", Toast.LENGTH_SHORT).show();
+                break;
+            case 1:
+                playModeButton.setImageResource(R.drawable.ic_repeat_one);
+                Toast.makeText(this, "单曲循环", Toast.LENGTH_SHORT).show();
+                break;
+            case 2:
+                playModeButton.setImageResource(R.drawable.ic_shuffle);
+                Toast.makeText(this, "随机播放", Toast.LENGTH_SHORT).show();
+                break;
+        }
+        if (serviceBound && playbackService != null) {
+            playbackService.setPlayMode(playMode);
+        }
     }
 }
