@@ -10,7 +10,6 @@ public class Music {
 
     public String title;
     public String filePath;
-    // 可以添加其他属性，如艺术家、专辑等
 
     public Music(String title, String filePath) {
         this.title = title;

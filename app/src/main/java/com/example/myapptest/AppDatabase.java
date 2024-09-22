@@ -6,7 +6,7 @@ import androidx.room.Database;
 import androidx.room.Room;
 import androidx.room.RoomDatabase;
 
-@Database(entities = {Music.class}, version = 1)
+@Database(entities = {Music.class, MusicCollection.class, MusicCollectionSong.class, PlayQueue.class}, version = 3, exportSchema = false)
 public abstract class AppDatabase extends RoomDatabase {
     public abstract MusicDao musicDao();
 
@@ -18,6 +18,7 @@ public abstract class AppDatabase extends RoomDatabase {
                 if (INSTANCE == null) {
                     INSTANCE = Room.databaseBuilder(context.getApplicationContext(),
                             AppDatabase.class, "music_database")
+                            .fallbackToDestructiveMigration() // 添加这行
                             .build();
                 }
             }
