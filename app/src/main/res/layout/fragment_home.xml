@@ -17,4 +17,10 @@
         android:layout_height="wrap_content"
         android:text="音乐库" />
 
+    <Button
+        android:id="@+id/btn_favorite"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="我的喜欢" />
+
 </LinearLayout>

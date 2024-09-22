@@ -5,6 +5,7 @@ import androidx.room.Insert;
 import androidx.room.OnConflictStrategy; // 添加这行
 import androidx.room.Query;
 import androidx.room.Transaction;
+import androidx.room.Update;
 
 import java.util.List;
 
@@ -39,4 +40,10 @@ public interface MusicDao {
 
     @Query("UPDATE PlayQueue SET currentIndex = :index")
     void updatePlayQueueIndex(int index);
+
+    @Update
+    void updateMusic(Music music);
+
+    @Query("SELECT * FROM music WHERE isFavorite = 1")
+    List<Music> getFavoriteSongs();
 }

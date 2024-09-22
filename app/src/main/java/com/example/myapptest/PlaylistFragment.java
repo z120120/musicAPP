@@ -5,7 +5,6 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.ArrayAdapter;
 import android.widget.ListView;
 import android.widget.Toast;
 
@@ -19,6 +18,7 @@ public class PlaylistFragment extends Fragment {
     private static final String TAG = "PlaylistFragment";
     private ListView playlistView;
     private List<Music> playlistSongs;
+    private PlaylistAdapter adapter;
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
@@ -80,13 +80,29 @@ public class PlaylistFragment extends Fragment {
     private void updatePlaylistView() {
         if (getContext() == null) return;
         
-        ArrayAdapter<String> adapter = new ArrayAdapter<>(getContext(), 
-            android.R.layout.simple_list_item_1,
-            playlistSongs.stream().map(m -> m.title).toArray(String[]::new));
+        adapter = new PlaylistAdapter(getContext(), playlistSongs, this);
         playlistView.setAdapter(adapter);
 
         if (playlistSongs.isEmpty()) {
             Toast.makeText(getContext(), "播放列表为空", Toast.LENGTH_SHORT).show();
         }
+    }
+
+    public void toggleFavorite(int position) {
+        Music music = playlistSongs.get(position);
+        music.isFavorite = !music.isFavorite;
+        
+        AppDatabase db = AppDatabase.getDatabase(getContext());
+        MusicDao musicDao = db.musicDao();
+
+        new Thread(() -> {
+            musicDao.updateMusic(music);
+            if (getActivity() != null) {
+                getActivity().runOnUiThread(() -> {
+                    adapter.notifyDataSetChanged();
+                    Toast.makeText(getContext(), music.isFavorite ? "已添加到喜爱" : "已从喜爱中移除", Toast.LENGTH_SHORT).show();
+                });
+            }
+        }).start();
     }
 }

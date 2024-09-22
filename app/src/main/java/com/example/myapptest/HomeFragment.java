@@ -28,6 +28,16 @@ public class HomeFragment extends Fragment {
                     .commit();
         });
 
+        // 添加"我的喜欢"按钮
+        Button favoriteButton = view.findViewById(R.id.btn_favorite);
+        favoriteButton.setOnClickListener(v -> {
+            Fragment fragment = new FavoriteFragment();
+            getParentFragmentManager().beginTransaction()
+                    .replace(R.id.fragment_container, fragment)
+                    .addToBackStack(null)
+                    .commit();
+        });
+
         return view;
     }
 }

@@ -10,9 +10,11 @@ public class Music {
 
     public String title;
     public String filePath;
+    public boolean isFavorite; // 新增字段
 
     public Music(String title, String filePath) {
         this.title = title;
         this.filePath = filePath;
+        this.isFavorite = false; // 默认不是喜爱
     }
 }
