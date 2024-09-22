@@ -109,7 +109,7 @@ public class MainActivity extends AppCompatActivity implements BottomNavigationV
         Log.d(TAG, "playMusic: 尝试播放音乐，播放列表大小: " + playlist.size() + ", 位置: " + position);
         if (serviceBound && playbackService != null) {
             playbackService.setPlaylist(playlist);
-            playbackService.setCurrentIndex(position); // 添加这行以设置当前播放索引
+            playbackService.setCurrentIndex(position); // 设置当前播放索引
             playbackService.play();
             updateMiniPlayer(playlist.get(position).title);
             Log.d(TAG, "playMusic: 已调用 PlaybackService 的 play 方法");

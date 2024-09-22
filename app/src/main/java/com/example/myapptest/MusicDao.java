@@ -2,6 +2,7 @@ package com.example.myapptest;
 
 import androidx.room.Dao;
 import androidx.room.Insert;
+import androidx.room.OnConflictStrategy; // 添加这行
 import androidx.room.Query;
 import androidx.room.Transaction;
 
@@ -24,7 +25,7 @@ public interface MusicDao {
     @Query("SELECT * FROM MusicCollection WHERE isDefault = 1 LIMIT 1")
     MusicCollection getDefaultCollection();
 
-    @Insert
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
     void insertMusicCollectionSong(MusicCollectionSong collectionSong);
 
     @Query("SELECT m.* FROM Music m INNER JOIN MusicCollectionSong mcs ON m.id = mcs.musicId WHERE mcs.collectionId = :collectionId ORDER BY mcs.`order`")

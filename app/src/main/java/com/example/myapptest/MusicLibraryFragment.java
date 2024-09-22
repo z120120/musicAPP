@@ -8,6 +8,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
+import android.widget.Button;
 import android.widget.ListView;
 import android.widget.Toast;
 
@@ -28,6 +29,7 @@ public class MusicLibraryFragment extends Fragment {
     private ListView musicListView;
     private List<Music> musicList;
     private BroadcastReceiver musicScanReceiver;
+    private Button addAllButton;
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
@@ -64,12 +66,12 @@ public class MusicLibraryFragment extends Fragment {
         Log.d(TAG, "onViewCreated: 视图创建完成");
         loadMusicFromDatabase();
 
+        addAllButton = view.findViewById(R.id.btn_add_all);
+        addAllButton.setOnClickListener(v -> addAllMusicToPlaylist());
+
         musicListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                // 移除弹出音乐详情对话框
-                // showMusicDetails(position);
-                
                 // 添加音乐到播放列表并播放
                 addMusicToPlaylistAndPlay(position);
             }
@@ -163,9 +165,9 @@ public class MusicLibraryFragment extends Fragment {
                     defaultCollection.id = (int) collectionId;
                 }
 
-                // 创建并插入 MusicCollectionSong
+                // 创建并插入 MusicCollectionSong，忽略已存在的条目
                 MusicCollectionSong collectionSong = new MusicCollectionSong(defaultCollection.id, selectedMusic.id, 0);
-                musicDao.insertMusicCollectionSong(collectionSong);
+                musicDao.insertMusicCollectionSong(collectionSong); // 使用 IGNORE 策略
 
                 // 获取或创建 PlayQueue
                 PlayQueue playQueue = musicDao.getPlayQueue();
@@ -173,7 +175,7 @@ public class MusicLibraryFragment extends Fragment {
                     playQueue = new PlayQueue();
                     musicDao.insertPlayQueue(playQueue);
                 }
-                musicDao.updatePlayQueueIndex(position); // 将 currentIndex 修改为 position
+                musicDao.updatePlayQueueIndex(position); // 使用 position 作为索引
 
                 if (isAdded() && getActivity() != null) {
                     getActivity().runOnUiThread(() -> {
@@ -199,6 +201,7 @@ public class MusicLibraryFragment extends Fragment {
 
         new Thread(() -> {
             try {
+                // 获取默认的音乐集合
                 MusicCollection defaultCollection = musicDao.getDefaultCollection();
                 if (defaultCollection == null) {
                     defaultCollection = new MusicCollection("Default Collection", true);
@@ -206,14 +209,17 @@ public class MusicLibraryFragment extends Fragment {
                     defaultCollection.id = (int) collectionId;
                 }
 
+                // 获取所有音乐
                 List<Music> allMusic = musicDao.getAllMusic();
 
+                // 添加所有音乐到默认集合，忽略已存在的条目
                 for (int i = 0; i < allMusic.size(); i++) {
                     Music music = allMusic.get(i);
                     MusicCollectionSong collectionSong = new MusicCollectionSong(defaultCollection.id, music.id, i);
-                    musicDao.insertMusicCollectionSong(collectionSong);
+                    musicDao.insertMusicCollectionSong(collectionSong); // 使用 IGNORE 策略
                 }
 
+                // 获取或创建 PlayQueue
                 PlayQueue playQueue = musicDao.getPlayQueue();
                 if (playQueue == null) {
                     playQueue = new PlayQueue();
@@ -224,14 +230,17 @@ public class MusicLibraryFragment extends Fragment {
                 if (isAdded() && getActivity() != null) {
                     getActivity().runOnUiThread(() -> {
                         Toast.makeText(requireContext(), "已将所有音乐添加到播放列表", Toast.LENGTH_SHORT).show();
-                        // TODO: 启动 PlaybackService 并开始播放
+                        Log.d(TAG, "addAllMusicToPlaylist: 尝试播放第一首音乐");
+                        if (!allMusic.isEmpty()) {
+                            ((MainActivity) getActivity()).playMusic(allMusic, 0);
+                        }
                     });
                 }
             } catch (Exception e) {
-                Log.e(TAG, "Error adding music to playlist", e);
+                Log.e(TAG, "addAllMusicToPlaylist: 添加所有音乐到播放列表失败", e);
                 if (isAdded() && getActivity() != null) {
                     getActivity().runOnUiThread(() -> 
-                        Toast.makeText(requireContext(), "添加音乐到播放列表失败: " + e.getMessage(), Toast.LENGTH_SHORT).show()
+                        Toast.makeText(requireContext(), "添加所有音乐到播放列表失败: " + e.getMessage(), Toast.LENGTH_SHORT).show()
                     );
                 }
             }
