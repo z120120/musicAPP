@@ -3,15 +3,28 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:padding="16dp">
+    android:padding="16dp"
+    android:background="@color/white">
+
+    <!-- 添加专辑图片 ImageView -->
+    <ImageView
+        android:id="@+id/full_screen_album_art"
+        android:layout_width="300dp"
+        android:layout_height="300dp"
+        android:layout_gravity="center"
+        android:layout_marginTop="32dp"
+        android:layout_marginBottom="32dp"
+        android:scaleType="centerCrop"
+        android:src="@drawable/default_album_art" />
 
     <TextView
         android:id="@+id/full_screen_song_title"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:textSize="24sp"
+        android:textStyle="bold"
+        android:textColor="@color/black"
         android:textAlignment="center"
-        android:layout_marginTop="32dp"
         android:layout_marginBottom="8dp"/>
 
     <TextView
@@ -19,6 +32,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:textSize="18sp"
+        android:textColor="@color/black"
         android:textAlignment="center"
         android:layout_marginBottom="8dp"/>
 
@@ -26,7 +40,8 @@
         android:id="@+id/full_screen_album"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:textSize="18sp"
+        android:textSize="16sp"
+        android:textColor="@color/black"
         android:textAlignment="center"
         android:layout_marginBottom="32dp"/>
 
@@ -34,7 +49,9 @@
         android:id="@+id/full_screen_seek_bar"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="16dp"/>
+        android:layout_marginBottom="16dp"
+        android:progressTint="@color/accent_color"
+        android:thumbTint="@color/accent_color"/>
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -45,6 +62,7 @@
             android:id="@+id/full_screen_current_time"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:textColor="@color/black"
             android:text="00:00"/>
 
         <View
@@ -56,6 +74,7 @@
             android:id="@+id/full_screen_total_time"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:textColor="@color/black"
             android:text="00:00"/>
     </LinearLayout>
 
@@ -71,7 +90,8 @@
             android:layout_width="64dp"
             android:layout_height="64dp"
             android:src="@drawable/ic_previous"
-            android:background="?attr/selectableItemBackgroundBorderless" />
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:tint="@color/black" />
 
         <ImageButton
             android:id="@+id/full_screen_play_pause_button"
@@ -80,23 +100,26 @@
             android:src="@drawable/ic_play"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:layout_marginLeft="32dp"
-            android:layout_marginRight="32dp"/>
+            android:layout_marginRight="32dp"
+            android:tint="@color/black" />
 
         <ImageButton
             android:id="@+id/full_screen_next_button"
             android:layout_width="64dp"
             android:layout_height="64dp"
             android:src="@drawable/ic_next"
-            android:background="?attr/selectableItemBackgroundBorderless" />
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:tint="@color/black" />
     </LinearLayout>
 
     <ImageButton
         android:id="@+id/full_screen_play_mode_button"
-        android:layout_width="48dp"
-        android:layout_height="48dp"
+        android:layout_width="56dp"
+        android:layout_height="56dp"
         android:src="@drawable/ic_repeat"
         android:background="?attr/selectableItemBackgroundBorderless"
         android:layout_gravity="center"
-        android:layout_marginTop="32dp"/>
+        android:layout_marginTop="32dp"
+        android:tint="@color/black" />
 
 </LinearLayout>

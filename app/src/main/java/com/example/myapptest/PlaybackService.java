@@ -3,18 +3,25 @@ package com.example.myapptest;
 import android.app.Service;
 import android.content.Intent;
 import android.media.MediaPlayer;
-import android.net.Uri;  // 添加这行
+import android.net.Uri;
 import android.os.Binder;
 import android.os.IBinder;
-import android.util.Log;  // 添加这行
+import android.util.Log;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.media.MediaMetadataRetriever;
 import androidx.annotation.Nullable;
+import android.content.ContentResolver;
+import androidx.documentfile.provider.DocumentFile;
+
+import java.io.File;
 import java.io.IOException;
 import java.util.List;
 import java.util.Random;
 
 public class PlaybackService extends Service implements MediaPlayer.OnCompletionListener {
 
-    private static final String TAG = "PlaybackService";  // 添加这行
+    private static final String TAG = "PlaybackService";
 
     private final IBinder binder = new LocalBinder();
     private MediaPlayer mediaPlayer;
@@ -23,6 +30,8 @@ public class PlaybackService extends Service implements MediaPlayer.OnCompletion
     private int playMode = 0; // 0: 列表循环, 1: 单曲循环, 2: 随机播放
     private Random random = new Random();
     private int lastPosition = 0; // 添加这个字段来保存暂停时的位置
+    private boolean isChangingSong = false;
+    private boolean isPrepared = false;
 
     public class LocalBinder extends Binder {
         PlaybackService getService() {
@@ -37,7 +46,16 @@ public class PlaybackService extends Service implements MediaPlayer.OnCompletion
         mediaPlayer.setOnCompletionListener(this);
         mediaPlayer.setOnErrorListener((mp, what, extra) -> {
             Log.e(TAG, "MediaPlayer error: what=" + what + ", extra=" + extra);
+            isPrepared = false;
             return false;
+        });
+        mediaPlayer.setOnPreparedListener(mp -> {
+            isPrepared = true;
+            mp.start();
+            Log.d(TAG, "MediaPlayer prepared and started");
+            if (songChangeListener != null) {
+                songChangeListener.onSongChange(getCurrentSongTitle());
+            }
         });
     }
 
@@ -70,7 +88,10 @@ public class PlaybackService extends Service implements MediaPlayer.OnCompletion
         }
     }
 
-    public void next() {
+    public synchronized void next() {
+        if (isChangingSong) return;
+        isChangingSong = true;
+        Log.d(TAG, "开始切换到下一首歌曲");
         if (playlist != null && !playlist.isEmpty()) {
             if (playMode == 2) { // 随机播放
                 currentIndex = random.nextInt(playlist.size());
@@ -79,9 +100,13 @@ public class PlaybackService extends Service implements MediaPlayer.OnCompletion
             }
             playMusic(currentIndex);
         }
+        isChangingSong = false;
     }
 
-    public void previous() {
+    public synchronized void previous() {
+        if (isChangingSong) return;
+        isChangingSong = true;
+        Log.d(TAG, "开始切换到上一首歌曲");
         if (playlist != null && !playlist.isEmpty()) {
             if (playMode == 2) { // 随机播放
                 currentIndex = random.nextInt(playlist.size());
@@ -90,6 +115,7 @@ public class PlaybackService extends Service implements MediaPlayer.OnCompletion
             }
             playMusic(currentIndex);
         }
+        isChangingSong = false;
     }
 
     public void setPlayMode(int mode) {
@@ -151,12 +177,14 @@ public class PlaybackService extends Service implements MediaPlayer.OnCompletion
             Log.d(TAG, "playMusic: 准备播放 " + music.title + ", 文件路径: " + music.filePath);
             try {
                 mediaPlayer.reset();
+                isPrepared = false;
                 Uri uri = Uri.parse(music.filePath);
                 mediaPlayer.setDataSource(getApplicationContext(), uri);
                 mediaPlayer.prepareAsync();
                 mediaPlayer.setOnPreparedListener(mp -> {
+                    isPrepared = true;
                     mp.start();
-                    Log.d(TAG, "playMusic: 音乐开始播放");
+                    Log.d(TAG, "playMusic: 音乐开始播放，duration: " + mp.getDuration());
                     notifySongChange(music.title); // 通知歌曲变化
                 });
                 // 移除这里的 setOnCompletionListener，因为我们已经在 onCreate 中设置了全局的 OnCompletionListener
@@ -187,15 +215,39 @@ public class PlaybackService extends Service implements MediaPlayer.OnCompletion
     }
 
     public int getCurrentPosition() {
-        return mediaPlayer.getCurrentPosition();
+        if (isPrepared && mediaPlayer != null) {
+            try {
+                int position = mediaPlayer.getCurrentPosition();
+                Log.d(TAG, "getCurrentPosition: " + position);
+                return position;
+            } catch (IllegalStateException e) {
+                Log.e(TAG, "Error getting current position: " + e.getMessage());
+            }
+        } else {
+            Log.d(TAG, "getCurrentPosition: MediaPlayer not prepared or null");
+        }
+        return 0;
     }
 
     public int getDuration() {
-        return mediaPlayer.getDuration();
+        if (isPrepared && mediaPlayer != null) {
+            try {
+                int duration = mediaPlayer.getDuration();
+                Log.d(TAG, "getDuration: " + duration);
+                return duration;
+            } catch (IllegalStateException e) {
+                Log.e(TAG, "Error getting duration: " + e.getMessage());
+            }
+        } else {
+            Log.d(TAG, "getDuration: MediaPlayer not prepared or null");
+        }
+        return 0;
     }
 
     public void seekTo(int position) {
-        mediaPlayer.seekTo(position);
+        if (isPrepared && mediaPlayer != null) {
+            mediaPlayer.seekTo(position);
+        }
     }
 
     @Override
@@ -215,6 +267,99 @@ public class PlaybackService extends Service implements MediaPlayer.OnCompletion
     public Music getCurrentMusic() {
         if (playlist != null && currentIndex >= 0 && currentIndex < playlist.size()) {
             return playlist.get(currentIndex);
+        }
+        return null;
+    }
+
+    // 添加获取专辑图片的方法
+    public Bitmap getAlbumArt() {
+        if (playlist != null && currentIndex >= 0 && currentIndex < playlist.size()) {
+            Music currentMusic = playlist.get(currentIndex);
+            Log.d(TAG, "尝试获取专辑图片: " + currentMusic.filePath);
+            MediaMetadataRetriever retriever = new MediaMetadataRetriever();
+            try {
+                Uri uri = Uri.parse(currentMusic.filePath);
+                if (ContentResolver.SCHEME_CONTENT.equals(uri.getScheme())) {
+                    // 处理 content URI
+                    retriever.setDataSource(getApplicationContext(), uri);
+                } else {
+                    // 处理普通文件路径
+                    retriever.setDataSource(currentMusic.filePath);
+                }
+                byte[] art = retriever.getEmbeddedPicture();
+                if (art != null) {
+                    Log.d(TAG, "成功获取到嵌入的专辑图片，大小: " + art.length + " bytes");
+                    Bitmap bitmap = BitmapFactory.decodeByteArray(art, 0, art.length);
+                    if (bitmap != null) {
+                        Log.d(TAG, "成功解码专辑图片，尺寸: " + bitmap.getWidth() + "x" + bitmap.getHeight());
+                        return bitmap;
+                    } else {
+                        Log.e(TAG, "无法解码专辑图片");
+                    }
+                } else {
+                    Log.d(TAG, "没有找到嵌入的专辑图片，尝试获取外部专辑图片");
+                    String imagePath = getAlbumArtFromFolder(currentMusic.filePath);
+                    if (imagePath != null) {
+                        Log.d(TAG, "找到外部专辑图片: " + imagePath);
+                        Bitmap bitmap = BitmapFactory.decodeFile(imagePath);
+                        if (bitmap != null) {
+                            Log.d(TAG, "成功解码外部专辑图片，尺寸: " + bitmap.getWidth() + "x" + bitmap.getHeight());
+                            return bitmap;
+                        } else {
+                            Log.e(TAG, "无法解码外部专辑图片");
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                Log.e(TAG, "获取专辑图片失败", e);
+            } finally {
+                try {
+                    retriever.release();
+                } catch (Exception e) {
+                    Log.e(TAG, "释放 MediaMetadataRetriever 失败", e);
+                }
+            }
+        }
+        Log.d(TAG, "无法获取专辑图片，返回null");
+        return null;
+    }
+
+    private String getAlbumArtFromFolder(String musicFilePath) {
+        Uri uri = Uri.parse(musicFilePath);
+        if (ContentResolver.SCHEME_CONTENT.equals(uri.getScheme())) {
+            // 处理 content URI
+            DocumentFile documentFile = DocumentFile.fromSingleUri(getApplicationContext(), uri);
+            if (documentFile != null && documentFile.getParentFile() != null) {
+                DocumentFile parentFolder = documentFile.getParentFile();
+                String fileName = documentFile.getName();
+                if (fileName != null) {
+                    String fileNameWithoutExtension = fileName.substring(0, fileName.lastIndexOf('.'));
+                    String[] extensions = {".jpg", ".png", ".jpeg", ".webp"};
+                    for (String ext : extensions) {
+                        DocumentFile imageFile = parentFolder.findFile(fileNameWithoutExtension + ext);
+                        if (imageFile != null && imageFile.exists()) {
+                            Log.d(TAG, "找到外部专辑图片: " + imageFile.getUri());
+                            return imageFile.getUri().toString();
+                        }
+                    }
+                }
+            }
+        } else {
+            // 处理普通文件路径
+            File musicFile = new File(musicFilePath);
+            File folder = musicFile.getParentFile();
+            if (folder != null && folder.isDirectory()) {
+                String[] extensions = {".jpg", ".png", ".jpeg", ".webp"};
+                String fileName = musicFile.getName();
+                String fileNameWithoutExtension = fileName.substring(0, fileName.lastIndexOf('.'));
+                for (String ext : extensions) {
+                    File imageFile = new File(folder, fileNameWithoutExtension + ext);
+                    if (imageFile.exists()) {
+                        Log.d(TAG, "找到外部专辑图片: " + imageFile.getAbsolutePath());
+                        return imageFile.getAbsolutePath();
+                    }
+                }
+            }
         }
         return null;
     }

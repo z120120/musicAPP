@@ -8,6 +8,7 @@ import android.content.ComponentName;
 import android.os.IBinder;
 import android.content.ServiceConnection;
 import android.view.View;
+import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.ImageButton;
 import android.widget.Toast; // 添加这行
@@ -98,7 +99,8 @@ public class MainActivity extends AppCompatActivity implements BottomNavigationV
         albumView = findViewById(R.id.album);
 
         // 初始化 PlayerController
-        playerController = new PlayerController(this, null, songTitleView, playPauseButton, playModeButton, seekBar, currentTimeView, totalTimeView, artistView, albumView);
+        ImageView miniPlayerAlbumArt = findViewById(R.id.mini_player_album_art); // 添加这行来获取迷你播放器的专辑封面 ImageView
+        playerController = new PlayerController(this, null, songTitleView, playPauseButton, playModeButton, seekBar, currentTimeView, totalTimeView, artistView, albumView, miniPlayerAlbumArt);
 
         playPauseButton.setOnClickListener(v -> playerController.togglePlayPause());
         previousButton.setOnClickListener(v -> playerController.playPrevious());
@@ -221,6 +223,7 @@ public class MainActivity extends AppCompatActivity implements BottomNavigationV
         runOnUiThread(() -> {
             playerController.updateUIForNewSong();
             miniPlayer.setVisibility(View.VISIBLE);
+            Log.d(TAG, "歌曲变化，更新UI和专辑图片");
         });
     }
 
@@ -229,6 +232,7 @@ public class MainActivity extends AppCompatActivity implements BottomNavigationV
         runOnUiThread(() -> {
             playerController.updateUIForNewSong();
             miniPlayer.setVisibility(View.VISIBLE);
+            Log.d(TAG, "自动播放下一首，更新UI和专辑图片");
         });
     }
 

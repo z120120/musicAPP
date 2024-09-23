@@ -1,11 +1,14 @@
 package com.example.myapptest;
 
 import android.content.Context;
+import android.util.Log;
 import android.widget.ImageButton;
 import android.widget.TextView;
 import android.widget.Toast;
 import android.os.Handler;
 import android.widget.SeekBar;
+import android.widget.ImageView;
+import android.graphics.Bitmap;
 
 public class PlayerController {
     private PlaybackService playbackService;
@@ -21,11 +24,12 @@ public class PlayerController {
     private Runnable progressUpdateRunnable;
     private TextView artistView;
     private TextView albumView;
+    private ImageView albumArtView;
 
     public PlayerController(Context context, PlaybackService playbackService, TextView songTitleView, 
                             ImageButton playPauseButton, ImageButton playModeButton,
                             SeekBar seekBar, TextView currentTimeView, TextView totalTimeView,
-                            TextView artistView, TextView albumView) {
+                            TextView artistView, TextView albumView, ImageView albumArtView) {
         this.context = context;
         this.playbackService = playbackService;
         this.songTitleView = songTitleView;
@@ -36,6 +40,7 @@ public class PlayerController {
         this.totalTimeView = totalTimeView;
         this.artistView = artistView;
         this.albumView = albumView;
+        this.albumArtView = albumArtView;
     }
 
     public void setPlaybackService(PlaybackService playbackService) {
@@ -54,12 +59,14 @@ public class PlayerController {
 
     public void playPrevious() {
         if (playbackService == null) return;
+        Log.d("PlayerController", "尝试播放上一首");
         playbackService.previous();
         updateSongTitle();
     }
 
     public void playNext() {
         if (playbackService == null) return;
+        Log.d("PlayerController", "尝试播放下一首");
         playbackService.next();
         updateSongTitle();
     }
@@ -102,29 +109,45 @@ public class PlayerController {
     }
 
     public void startProgressUpdate() {
+        stopProgressUpdate();
         progressUpdateRunnable = new Runnable() {
             @Override
             public void run() {
                 if (playbackService != null) {
                     int currentPosition = playbackService.getCurrentPosition();
                     int duration = playbackService.getDuration();
+                    Log.d("PlayerController", "Progress update - Position: " + currentPosition + ", Duration: " + duration);
                     updateProgressBar(currentPosition, duration);
                 }
                 handler.postDelayed(this, 1000);
             }
         };
-        handler.postDelayed(progressUpdateRunnable, 1000);
+        handler.post(progressUpdateRunnable);
     }
 
     public void stopProgressUpdate() {
-        handler.removeCallbacks(progressUpdateRunnable);
+        if (progressUpdateRunnable != null) {
+            handler.removeCallbacks(progressUpdateRunnable);
+        }
     }
 
     private void updateProgressBar(int currentPosition, int duration) {
-        seekBar.setMax(duration);
-        seekBar.setProgress(currentPosition);
-        currentTimeView.setText(formatTime(currentPosition));
-        totalTimeView.setText(formatTime(duration));
+        if (seekBar != null && currentTimeView != null && totalTimeView != null) {
+            if (duration > 0) {
+                seekBar.setMax(duration);
+                seekBar.setProgress(currentPosition);
+                currentTimeView.setText(formatTime(currentPosition));
+                totalTimeView.setText(formatTime(duration));
+                Log.d("PlayerController", "Updated progress bar - Position: " + currentPosition + ", Duration: " + duration);
+            } else {
+                seekBar.setProgress(0);
+                currentTimeView.setText("00:00");
+                totalTimeView.setText("00:00");
+                Log.d("PlayerController", "Reset progress bar due to invalid duration");
+            }
+        } else {
+            Log.e("PlayerController", "One or more views are null in updateProgressBar");
+        }
     }
 
     private String formatTime(int milliseconds) {
@@ -159,11 +182,28 @@ public class PlayerController {
         }
     }
 
+    public void updateAlbumArt() {
+        if (playbackService != null && albumArtView != null) {
+            Bitmap albumArt = playbackService.getAlbumArt();
+            if (albumArt != null) {
+                albumArtView.setImageBitmap(albumArt);
+                Log.d("PlayerController", "成功设置了新的专辑图片");
+            } else {
+                albumArtView.setImageResource(R.drawable.default_album_art);
+                Log.d("PlayerController", "设置了默认专辑图片");
+            }
+        } else {
+            Log.d("PlayerController", "无法更新专辑图片：playbackService 或 albumArtView 为 null");
+        }
+    }
+
     public void updateUIForNewSong() {
+        Log.d("PlayerController", "更新UI for新歌曲");
         updateSongTitle();
         updateArtistAndAlbum();
         updatePlayPauseButton();
         updatePlayModeButton();
+        updateAlbumArt();
     }
 
     private void updateArtistAndAlbum() {

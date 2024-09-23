@@ -11,6 +11,10 @@ import android.widget.ImageButton;
 import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.Toast;
+import android.graphics.Bitmap;
+import android.widget.ImageView;
+import android.graphics.drawable.GradientDrawable;
+import java.util.Random;
 
 import androidx.appcompat.app.AppCompatActivity;
 
@@ -28,6 +32,7 @@ public class FullScreenPlayerActivity extends AppCompatActivity implements Playb
     private SeekBar seekBar;
     private TextView currentTimeView;
     private TextView totalTimeView;
+    private ImageView albumArtView;
 
     private PlaybackService playbackService;
     private boolean serviceBound = false;
@@ -41,6 +46,7 @@ public class FullScreenPlayerActivity extends AppCompatActivity implements Playb
             serviceBound = true;
             playerController.setPlaybackService(playbackService);
             initializePlayerController();
+            updateAlbumArt(); // 在服务连接后立即更新专辑图片
         }
 
         @Override
@@ -52,10 +58,16 @@ public class FullScreenPlayerActivity extends AppCompatActivity implements Playb
     private Handler handler = new Handler();
     private Runnable progressUpdateRunnable;
 
+    private long lastClickTime = 0;
+    private static final long CLICK_TIME_INTERVAL = 500; // 增加到 500 毫秒
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_full_screen_player);
+
+        // 设置随机渐变背景
+        setRandomGradientBackground();
 
         try {
             // 初始化视图
@@ -65,7 +77,7 @@ public class FullScreenPlayerActivity extends AppCompatActivity implements Playb
             playerController = new PlayerController(this, null, songTitleView, 
                                                     playPauseButton, playModeButton, 
                                                     seekBar, currentTimeView, totalTimeView,
-                                                    artistView, albumView);
+                                                    artistView, albumView, albumArtView);
 
             // 绑定服务
             Intent intent = new Intent(this, PlaybackService.class);
@@ -77,11 +89,34 @@ public class FullScreenPlayerActivity extends AppCompatActivity implements Playb
             // 初始化时更新播放/暂停按钮状态
             playerController.updatePlayPauseButton();
 
+            // 初始化时更新专辑图片
+            updateAlbumArt();
+
         } catch (Exception e) {
             Log.e("FullScreenPlayerActivity", "初始化全屏播放器时出错", e);
             Toast.makeText(this, "初始化全屏播放器失败: " + e.getMessage(), Toast.LENGTH_SHORT).show();
             finish(); // 关闭活动
         }
+    }
+
+    private void setRandomGradientBackground() {
+        Random random = new Random();
+        int color1 = generateRandomColor(random);
+        int color2 = generateRandomColor(random);
+
+        GradientDrawable gradientDrawable = new GradientDrawable(
+                GradientDrawable.Orientation.TL_BR,
+                new int[]{color1, color2}
+        );
+
+        findViewById(android.R.id.content).setBackground(gradientDrawable);
+    }
+
+    private int generateRandomColor(Random random) {
+        return android.graphics.Color.argb(255,
+                random.nextInt(256),
+                random.nextInt(256),
+                random.nextInt(256));
     }
 
     private void initializeViews() {
@@ -95,6 +130,7 @@ public class FullScreenPlayerActivity extends AppCompatActivity implements Playb
         seekBar = findViewById(R.id.full_screen_seek_bar);
         currentTimeView = findViewById(R.id.full_screen_current_time);
         totalTimeView = findViewById(R.id.full_screen_total_time);
+        albumArtView = findViewById(R.id.full_screen_album_art);
 
         // 检查是否所有视图都正确初始化
         if (songTitleView == null || artistView == null || albumView == null ||
@@ -130,8 +166,22 @@ public class FullScreenPlayerActivity extends AppCompatActivity implements Playb
         playbackService.setOnSongChangeListener(this);
 
         playPauseButton.setOnClickListener(v -> playerController.togglePlayPause());
-        previousButton.setOnClickListener(v -> playerController.playPrevious());
-        nextButton.setOnClickListener(v -> playerController.playNext());
+        previousButton.setOnClickListener(v -> {
+            if (System.currentTimeMillis() - lastClickTime < CLICK_TIME_INTERVAL) {
+                return;
+            }
+            lastClickTime = System.currentTimeMillis();
+            Log.d("FullScreenPlayerActivity", "点击上一首按钮");
+            playerController.playPrevious();
+        });
+        nextButton.setOnClickListener(v -> {
+            if (System.currentTimeMillis() - lastClickTime < CLICK_TIME_INTERVAL) {
+                return;
+            }
+            lastClickTime = System.currentTimeMillis();
+            Log.d("FullScreenPlayerActivity", "点击下一首按钮");
+            playerController.playNext();
+        });
         playModeButton.setOnClickListener(v -> playerController.changePlayMode());
 
         // 设置进度条监听器
@@ -140,20 +190,39 @@ public class FullScreenPlayerActivity extends AppCompatActivity implements Playb
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
                 if (fromUser && playbackService != null) {
                     playbackService.seekTo(progress);
+                    Log.d("FullScreenPlayerActivity", "User seeked to: " + progress);
                 }
             }
 
             @Override
-            public void onStartTrackingTouch(SeekBar seekBar) {}
+            public void onStartTrackingTouch(SeekBar seekBar) {
+                // 可以选择暂停进度更新
+                playerController.stopProgressUpdate();
+            }
 
             @Override
-            public void onStopTrackingTouch(SeekBar seekBar) {}
+            public void onStopTrackingTouch(SeekBar seekBar) {
+                // 恢复进度更新
+                playerController.startProgressUpdate();
+            }
         });
 
         // 更新UI
         playerController.updateSongTitle();
         playerController.updatePlayPauseButton();
         playerController.updatePlayModeButton();
+        playerController.startProgressUpdate();
+    }
+
+    private void updateAlbumArt() {
+        if (playbackService != null) {
+            Bitmap albumArt = playbackService.getAlbumArt();
+            if (albumArt != null) {
+                albumArtView.setImageBitmap(albumArt);
+            } else {
+                albumArtView.setImageResource(R.drawable.default_album_art);
+            }
+        }
     }
 
     @Override
@@ -170,14 +239,34 @@ public class FullScreenPlayerActivity extends AppCompatActivity implements Playb
     @Override
     public void onSongChange(String title) {
         runOnUiThread(() -> {
+            Log.d("FullScreenPlayerActivity", "歌曲变化，更新UI: " + title);
             playerController.updateUIForNewSong();
+            updateAlbumArt();
         });
     }
 
     @Override
     public void onAutoPlayNext(String title) {
         runOnUiThread(() -> {
+            Log.d("FullScreenPlayerActivity", "自动播放下一首，更新UI: " + title);
             playerController.updateUIForNewSong();
+            updateAlbumArt();
         });
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        if (playerController != null) {
+            playerController.startProgressUpdate();
+        }
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        if (playerController != null) {
+            playerController.stopProgressUpdate();
+        }
     }
 }
