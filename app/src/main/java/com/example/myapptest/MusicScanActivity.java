@@ -3,6 +3,7 @@ package com.example.myapptest;
 import android.Manifest;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.media.MediaMetadataRetriever;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
@@ -143,8 +144,30 @@ public class MusicScanActivity extends AppCompatActivity {
             } else if (isMusicFile(file.getName())) {
                 String fileName = file.getName();
                 String filePath = file.getUri().toString(); // 获取文件的 URI
-                Log.d(TAG, "scanDirectory: 发现音乐文件 " + fileName + ", 路径: " + filePath);
-                musicFiles.add(new Music(fileName, filePath));
+                String artist = "未知艺术家"; // 默认值
+                String album = "未知专辑"; // 默认值
+
+                // 尝试获取艺术家和专辑信息
+                try {
+                    MediaMetadataRetriever retriever = new MediaMetadataRetriever();
+                    retriever.setDataSource(this, file.getUri());
+                    String retrievedArtist = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_ARTIST);
+                    String retrievedAlbum = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_ALBUM);
+                    
+                    if (retrievedArtist != null && !retrievedArtist.isEmpty()) {
+                        artist = retrievedArtist;
+                    }
+                    if (retrievedAlbum != null && !retrievedAlbum.isEmpty()) {
+                        album = retrievedAlbum;
+                    }
+                    
+                    retriever.release();
+                } catch (Exception e) {
+                    Log.e(TAG, "Error retrieving metadata for " + fileName, e);
+                }
+
+                Log.d(TAG, "scanDirectory: 发现音乐文件 " + fileName + ", 路径: " + filePath + ", 艺术家: " + artist + ", 专辑: " + album);
+                musicFiles.add(new Music(fileName, filePath, artist, album));
                 mainHandler.post(() -> {
                     scanStatusTextView.setText("已扫描到 " + musicFiles.size() + " 个音乐文件");
                     scannedFilesTextView.append(fileName + "\n");

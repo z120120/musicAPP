@@ -90,6 +90,19 @@
                 android:text="00:00" />
 
         </LinearLayout>
+
+        <!-- 在迷你播放器布局中添加这两个 TextView -->
+        <TextView
+            android:id="@+id/artist"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:visibility="gone" />
+
+        <TextView
+            android:id="@+id/album"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:visibility="gone" />
     </LinearLayout>
 
     <com.google.android.material.bottomnavigation.BottomNavigationView

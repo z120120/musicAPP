@@ -110,11 +110,15 @@ public class PlaybackService extends Service implements MediaPlayer.OnCompletion
                 playMusic(nextIndex);
                 break;
         }
+        if (songChangeListener != null) {
+            songChangeListener.onAutoPlayNext(getCurrentSongTitle());
+        }
     }
 
     // 添加 OnSongChangeListener 接口
     public interface OnSongChangeListener {
         void onSongChange(String title);
+        void onAutoPlayNext(String title); // 添加这个新方法
     }
 
     private OnSongChangeListener songChangeListener;
@@ -155,6 +159,7 @@ public class PlaybackService extends Service implements MediaPlayer.OnCompletion
                     Log.d(TAG, "playMusic: 音乐开始播放");
                     notifySongChange(music.title); // 通知歌曲变化
                 });
+                // 移除这里的 setOnCompletionListener，因为我们已经在 onCreate 中设置了全局的 OnCompletionListener
             } catch (IOException e) {
                 e.printStackTrace();
                 Log.e(TAG, "Error playing music: " + e.getMessage());
@@ -200,5 +205,17 @@ public class PlaybackService extends Service implements MediaPlayer.OnCompletion
             mediaPlayer.release();
             mediaPlayer = null;
         }
+    }
+
+    public int getPlayMode() {
+        return playMode;
+    }
+
+    // 添加获取当前播放音乐信息的方法
+    public Music getCurrentMusic() {
+        if (playlist != null && currentIndex >= 0 && currentIndex < playlist.size()) {
+            return playlist.get(currentIndex);
+        }
+        return null;
     }
 }

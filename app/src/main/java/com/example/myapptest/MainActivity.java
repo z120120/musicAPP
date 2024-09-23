@@ -36,6 +36,9 @@ public class MainActivity extends AppCompatActivity implements BottomNavigationV
             serviceBound = true;
             Log.d(TAG, "onServiceConnected: PlaybackService 已绑定");
             
+            // 更新 PlayerController
+            playerController.setPlaybackService(playbackService);
+            
             // 设置歌曲变化监听器
             playbackService.setOnSongChangeListener(MainActivity.this);
         }
@@ -59,6 +62,11 @@ public class MainActivity extends AppCompatActivity implements BottomNavigationV
     private TextView currentTimeView;
     private TextView totalTimeView;
     private Handler handler = new Handler();
+
+    private PlayerController playerController;
+
+    private TextView artistView;
+    private TextView albumView;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -86,11 +94,16 @@ public class MainActivity extends AppCompatActivity implements BottomNavigationV
         seekBar = findViewById(R.id.seek_bar);
         currentTimeView = findViewById(R.id.current_time);
         totalTimeView = findViewById(R.id.total_time);
+        artistView = findViewById(R.id.artist);
+        albumView = findViewById(R.id.album);
 
-        playPauseButton.setOnClickListener(v -> togglePlayPause());
-        previousButton.setOnClickListener(v -> playPrevious());
-        nextButton.setOnClickListener(v -> playNext());
-        playModeButton.setOnClickListener(v -> changePlayMode());
+        // 初始化 PlayerController
+        playerController = new PlayerController(this, null, songTitleView, playPauseButton, playModeButton, seekBar, currentTimeView, totalTimeView, artistView, albumView);
+
+        playPauseButton.setOnClickListener(v -> playerController.togglePlayPause());
+        previousButton.setOnClickListener(v -> playerController.playPrevious());
+        nextButton.setOnClickListener(v -> playerController.playNext());
+        playModeButton.setOnClickListener(v -> playerController.changePlayMode());
 
         seekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
@@ -108,7 +121,10 @@ public class MainActivity extends AppCompatActivity implements BottomNavigationV
         });
 
         // 启动进度更新任务
-        startProgressUpdate();
+        playerController.startProgressUpdate();
+
+        // 为底部音乐名称添加点击监听器
+        songTitleView.setOnClickListener(v -> openFullScreenPlayer());
 
         // ... 其他现有的代码 ...
     }
@@ -176,6 +192,7 @@ public class MainActivity extends AppCompatActivity implements BottomNavigationV
             unbindService(serviceConnection);
             serviceBound = false;
         }
+        playerController.stopProgressUpdate();
     }
 
     public void playMusic(List<Music> playlist, int position) {
@@ -191,66 +208,30 @@ public class MainActivity extends AppCompatActivity implements BottomNavigationV
         }
     }
 
-    private void togglePlayPause() {
-        if (serviceBound) {
-            if (playbackService.isPlaying()) {
-                playbackService.pause();
-                playPauseButton.setImageResource(R.drawable.ic_play);
-            } else {
-                playbackService.play();
-                playPauseButton.setImageResource(R.drawable.ic_pause);
-            }
-        }
-    }
-
     private void updateMiniPlayer(String songTitle) {
         runOnUiThread(() -> {
-            songTitleView.setText(stripFileExtension(songTitle)); // 修改这一行，去除后缀
+            playerController.updateSongTitle();
             miniPlayer.setVisibility(View.VISIBLE);
             playPauseButton.setImageResource(R.drawable.ic_pause);
         });
     }
 
-    private void playPrevious() {
-        if (serviceBound && playbackService != null) {
-            playbackService.previous();
-            updateMiniPlayer(playbackService.getCurrentSongTitle());
-        }
-    }
-
-    private void playNext() {
-        if (serviceBound && playbackService != null) {
-            playbackService.next();
-            updateMiniPlayer(playbackService.getCurrentSongTitle());
-        }
-    }
-
-    private void changePlayMode() {
-        playMode = (playMode + 1) % 3;
-        switch (playMode) {
-            case 0:
-                playModeButton.setImageResource(R.drawable.ic_repeat);
-                Toast.makeText(this, "列表循环", Toast.LENGTH_SHORT).show();
-                break;
-            case 1:
-                playModeButton.setImageResource(R.drawable.ic_repeat_one);
-                Toast.makeText(this, "单曲循环", Toast.LENGTH_SHORT).show();
-                break;
-            case 2:
-                playModeButton.setImageResource(R.drawable.ic_shuffle);
-                Toast.makeText(this, "随机播放", Toast.LENGTH_SHORT).show();
-                break;
-        }
-        if (serviceBound && playbackService != null) {
-            playbackService.setPlayMode(playMode);
-        }
+    @Override
+    public void onSongChange(String title) {
+        runOnUiThread(() -> {
+            playerController.updateUIForNewSong();
+            miniPlayer.setVisibility(View.VISIBLE);
+        });
     }
 
     @Override
-    public void onSongChange(String title) {
-        updateMiniPlayer(title);
+    public void onAutoPlayNext(String title) {
+        runOnUiThread(() -> {
+            playerController.updateUIForNewSong();
+            miniPlayer.setVisibility(View.VISIBLE);
+        });
     }
-    
+
     private String stripFileExtension(String filename) { // 添加此方法
         if (filename == null) {
             return "";
@@ -260,5 +241,36 @@ public class MainActivity extends AppCompatActivity implements BottomNavigationV
             return filename.substring(0, dotIndex);
         }
         return filename;
+    }
+
+    private void openFullScreenPlayer() {
+        try {
+            Intent intent = new Intent(this, FullScreenPlayerActivity.class);
+            if (playbackService != null) {
+                Music currentMusic = playbackService.getCurrentMusic();
+                if (currentMusic != null) {
+                    intent.putExtra("songTitle", stripFileExtension(currentMusic.title));
+                    intent.putExtra("artist", currentMusic.artist);
+                    intent.putExtra("album", currentMusic.album);
+                }
+            } else {
+                intent.putExtra("songTitle", songTitleView.getText().toString());
+            }
+            startActivity(intent);
+        } catch (Exception e) {
+            Log.e(TAG, "打开全屏播放器时出错", e);
+            Toast.makeText(this, "无法打开全屏播放器: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        if (serviceBound && playbackService != null) {
+            playerController.updateSongTitle();
+            playerController.updatePlayPauseButton();
+            playerController.updatePlayModeButton();
+            miniPlayer.setVisibility(View.VISIBLE);
+        }
     }
 }
