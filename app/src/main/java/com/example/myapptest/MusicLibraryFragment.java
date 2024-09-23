@@ -136,13 +136,24 @@ public class MusicLibraryFragment extends Fragment {
         }
         try {
             ArrayAdapter<String> adapter = new ArrayAdapter<>(requireContext(), android.R.layout.simple_list_item_1,
-                    musicList.stream().map(m -> m.title).toArray(String[]::new));
+                    musicList.stream().map(m -> stripFileExtension(m.title)).toArray(String[]::new)); // 修改这一行，去除后缀
             musicListView.setAdapter(adapter);
             Log.d(TAG, "updateMusicList: 音乐列表更新成功，共 " + musicList.size() + " 首歌曲");
         } catch (Exception e) {
             Log.e(TAG, "updateMusicList: 更新音乐列表失败", e);
             Toast.makeText(requireContext(), "更新音乐列表失败: " + e.getMessage(), Toast.LENGTH_SHORT).show();
         }
+    }
+
+    private String stripFileExtension(String filename) { // 添加此方法
+        if (filename == null) {
+            return "";
+        }
+        int dotIndex = filename.lastIndexOf('.');
+        if (dotIndex > 0) {
+            return filename.substring(0, dotIndex);
+        }
+        return filename;
     }
 
     private void addMusicToPlaylistAndPlay(int position) {

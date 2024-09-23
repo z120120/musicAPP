@@ -46,7 +46,8 @@ public class PlaylistAdapter extends ArrayAdapter<Music> {
         }
 
         Music music = filteredSongs.get(position);
-        holder.titleTextView.setText(music.title);
+        holder.titleTextView.setText(stripFileExtension(music.title)); // 修改这一行，去除后缀
+
         holder.favoriteIcon.setImageResource(music.isFavorite ? R.drawable.ic_favorite : R.drawable.ic_favorite_border);
 
         holder.favoriteIcon.setOnClickListener(v -> {
@@ -55,6 +56,17 @@ public class PlaylistAdapter extends ArrayAdapter<Music> {
         });
 
         return convertView;
+    }
+
+    private String stripFileExtension(String filename) { // 确保此方法存在
+        if (filename == null) {
+            return "";
+        }
+        int dotIndex = filename.lastIndexOf('.');
+        if (dotIndex > 0) {
+            return filename.substring(0, dotIndex);
+        }
+        return filename;
     }
 
     @Override

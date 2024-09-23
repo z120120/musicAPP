@@ -74,6 +74,9 @@ public class FavoriteFragment extends Fragment {
         adapter = new PlaylistAdapter(getContext(), favoriteSongs, null);
         favoriteListView.setAdapter(adapter);
 
+        // 更新适配器中的歌曲标题已在 PlaylistAdapter 中处理
+        // 若有其他地方直接设置标题，请确保去除后缀
+
         if (favoriteSongs.isEmpty()) {
             Toast.makeText(getContext(), "暂无喜欢的音乐", Toast.LENGTH_SHORT).show();
         }

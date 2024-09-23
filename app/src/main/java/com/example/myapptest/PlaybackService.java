@@ -125,8 +125,19 @@ public class PlaybackService extends Service implements MediaPlayer.OnCompletion
 
     private void notifySongChange(String title) {
         if (songChangeListener != null) {
-            songChangeListener.onSongChange(title);
+            songChangeListener.onSongChange(stripFileExtension(title)); // 修改这一行，去除后缀
         }
+    }
+
+    private String stripFileExtension(String filename) {
+        if (filename == null) {
+            return "";
+        }
+        int dotIndex = filename.lastIndexOf('.');
+        if (dotIndex > 0) {
+            return filename.substring(0, dotIndex);
+        }
+        return filename;
     }
 
     private void playMusic(int index) {

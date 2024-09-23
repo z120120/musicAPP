@@ -205,7 +205,7 @@ public class MainActivity extends AppCompatActivity implements BottomNavigationV
 
     private void updateMiniPlayer(String songTitle) {
         runOnUiThread(() -> {
-            songTitleView.setText(songTitle);
+            songTitleView.setText(stripFileExtension(songTitle)); // 修改这一行，去除后缀
             miniPlayer.setVisibility(View.VISIBLE);
             playPauseButton.setImageResource(R.drawable.ic_pause);
         });
@@ -249,5 +249,16 @@ public class MainActivity extends AppCompatActivity implements BottomNavigationV
     @Override
     public void onSongChange(String title) {
         updateMiniPlayer(title);
+    }
+    
+    private String stripFileExtension(String filename) { // 添加此方法
+        if (filename == null) {
+            return "";
+        }
+        int dotIndex = filename.lastIndexOf('.');
+        if (dotIndex > 0) {
+            return filename.substring(0, dotIndex);
+        }
+        return filename;
     }
 }
