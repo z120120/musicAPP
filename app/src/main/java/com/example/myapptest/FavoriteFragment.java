@@ -11,6 +11,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.ImageButton; // 添加这行
 import android.widget.ListView;
 import android.widget.Toast;
 
@@ -28,7 +29,7 @@ import java.io.OutputStream; // 添加这行
 import java.util.ArrayList;
 import java.util.List;
 
-public class FavoriteFragment extends Fragment {
+public class FavoriteFragment extends Fragment implements FavoriteToggleListener { // 实现接口
 
     private static final String TAG = "FavoriteFragment";
     private static final int REQUEST_CREATE_FILE = 2; // 添加这行
@@ -64,6 +65,11 @@ public class FavoriteFragment extends Fragment {
         Button importButton = view.findViewById(R.id.btn_import_favorites); // 初始化导入按钮
         importButton.setOnClickListener(v -> {
             importFavoritesFromTxt();
+        });
+
+        ImageButton refreshButton = view.findViewById(R.id.btn_refresh_favorites); // 初始化刷新按钮
+        refreshButton.setOnClickListener(v -> {
+            loadFavoriteSongsFromDatabase(); // 手动刷新喜欢的音乐列表
         });
 
         return view;
@@ -116,18 +122,17 @@ public class FavoriteFragment extends Fragment {
     private void updateFavoriteListView() {
         if (getContext() == null) return;
         
-        adapter = new PlaylistAdapter(getContext(), favoriteSongs, null);
+        // 将第三个参数从 null 改为 this
+        adapter = new PlaylistAdapter(getContext(), favoriteSongs, this);
         favoriteListView.setAdapter(adapter);
 
-        // 更新适配器中的歌曲标题已在 PlaylistAdapter 中处理
-        // 若有其他地方直接设置标题，请确保去除后缀
-
         if (favoriteSongs.isEmpty()) {
-            Toast.makeText(getContext(), "暂无喜欢的音乐", Toast.LENGTH_SHORT).show();
+            Toast.makeText(getContext(), "喜欢列表为空", Toast.LENGTH_SHORT).show();
         }
     }
 
-    public void toggleFavorite(int position) {
+    @Override
+    public void toggleFavorite(int position) { // 实现接口的方法
         Music music = favoriteSongs.get(position);
         music.isFavorite = !music.isFavorite;
         
@@ -138,10 +143,7 @@ public class FavoriteFragment extends Fragment {
             musicDao.updateMusic(music);
             if (getActivity() != null) {
                 getActivity().runOnUiThread(() -> {
-                    if (!music.isFavorite) {
-                        favoriteSongs.remove(position);
-                    }
-                    adapter.notifyDataSetChanged();
+                    adapter.notifyDataSetChanged(); // 只刷新列表，不移除音乐
                     Toast.makeText(getContext(), "已从喜爱中移除", Toast.LENGTH_SHORT).show();
                 });
             }
@@ -241,7 +243,7 @@ public class FavoriteFragment extends Fragment {
         for (Music music : allMusic) {
             String strippedTitle = stripFileExtension(music.title);
             Log.d(TAG, "Comparing imported name: " + name + " with database title: " + strippedTitle);
-            if (strippedTitle.equalsIgnoreCase(name)) {
+            if (strippedTitle.equalsIgnoreCase(name) || music.title.equalsIgnoreCase(name)) { // 支持有无后缀的匹配
                 return music;
             }
         }

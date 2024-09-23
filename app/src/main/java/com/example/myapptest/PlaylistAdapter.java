@@ -20,14 +20,14 @@ public class PlaylistAdapter extends ArrayAdapter<Music> {
     private final Context context;
     private final List<Music> songs;
     private final List<Music> filteredSongs; // 添加过滤后的歌曲列表
-    private final PlaylistFragment fragment;
+    private final FavoriteToggleListener listener; // 使用接口
 
-    public PlaylistAdapter(Context context, List<Music> songs, PlaylistFragment fragment) {
+    public PlaylistAdapter(Context context, List<Music> songs, FavoriteToggleListener listener) { // 修改构造函数
         super(context, R.layout.list_item_playlist, songs);
         this.context = context;
         this.songs = songs;
         this.filteredSongs = new ArrayList<>(songs); // 初始化过滤后的歌曲列表
-        this.fragment = fragment;
+        this.listener = listener; // 赋值接口
     }
 
     @NonNull
@@ -52,7 +52,10 @@ public class PlaylistAdapter extends ArrayAdapter<Music> {
 
         holder.favoriteIcon.setOnClickListener(v -> {
             int originalPosition = songs.indexOf(music);
-            fragment.toggleFavorite(originalPosition);
+            if (listener != null) {
+                listener.toggleFavorite(originalPosition);
+            }
+            notifyDataSetChanged(); // 确保在点击喜欢图标后刷新列表
         });
 
         return convertView;
@@ -67,6 +70,11 @@ public class PlaylistAdapter extends ArrayAdapter<Music> {
             return filename.substring(0, dotIndex);
         }
         return filename;
+    }
+
+    static class ViewHolder {
+        TextView titleTextView;
+        ImageView favoriteIcon;
     }
 
     @Override
@@ -85,6 +93,7 @@ public class PlaylistAdapter extends ArrayAdapter<Music> {
         return position;
     }
 
+    @NonNull
     @Override
     public Filter getFilter() {
         return new Filter() {
@@ -98,7 +107,7 @@ public class PlaylistAdapter extends ArrayAdapter<Music> {
                 } else {
                     String filterPattern = constraint.toString().toLowerCase().trim();
                     for (Music music : songs) {
-                        if (music.title.toLowerCase().contains(filterPattern)) {
+                        if (stripFileExtension(music.title).toLowerCase().contains(filterPattern)) {
                             filteredList.add(music);
                         }
                     }
@@ -116,10 +125,5 @@ public class PlaylistAdapter extends ArrayAdapter<Music> {
                 notifyDataSetChanged();
             }
         };
-    }
-
-    private static class ViewHolder {
-        TextView titleTextView;
-        ImageView favoriteIcon;
     }
 }

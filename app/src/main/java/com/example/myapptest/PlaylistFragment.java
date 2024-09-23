@@ -16,7 +16,7 @@ import androidx.fragment.app.Fragment;
 import java.util.ArrayList;
 import java.util.List;
 
-public class PlaylistFragment extends Fragment {
+public class PlaylistFragment extends Fragment implements FavoriteToggleListener { // 实现接口
 
     private static final String TAG = "PlaylistFragment";
     private ListView playlistView;
@@ -109,7 +109,8 @@ public class PlaylistFragment extends Fragment {
         }
     }
 
-    public void toggleFavorite(int position) {
+    @Override
+    public void toggleFavorite(int position) { // 实现接口的方法
         Music music = playlistSongs.get(position);
         music.isFavorite = !music.isFavorite;
         
