@@ -12,6 +12,19 @@
         android:textSize="24sp"
         android:layout_marginBottom="16dp"/>
 
+    <Button
+        android:id="@+id/btn_export_favorites"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="导出喜欢的音乐" />
+
+    <Button
+        android:id="@+id/btn_import_favorites"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="导入喜欢的音乐"
+        android:layout_marginTop="8dp" />
+
     <ListView
         android:id="@+id/favorite_list_view"
         android:layout_width="match_parent"

@@ -46,4 +46,7 @@ public interface MusicDao {
 
     @Query("SELECT * FROM music WHERE isFavorite = 1")
     List<Music> getFavoriteSongs();
+
+    @Update
+    void updateMusicList(List<Music> musicList);
 }
