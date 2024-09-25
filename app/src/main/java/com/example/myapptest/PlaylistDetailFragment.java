@@ -6,7 +6,6 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Bundle;
-import android.os.Environment;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -20,11 +19,10 @@ import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 
 import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -34,6 +32,7 @@ public class PlaylistDetailFragment extends Fragment implements FavoriteToggleLi
     private static final String ARG_PLAYLIST_NAME = "playlist_name";
     private static final int REQUEST_WRITE_STORAGE = 112;
     private static final int REQUEST_IMPORT_FILE = 113;
+    private static final int REQUEST_EXPORT_FILE = 114;
 
     private int playlistId;
     private String playlistName;
@@ -138,7 +137,42 @@ public class PlaylistDetailFragment extends Fragment implements FavoriteToggleLi
                 Uri uri = data.getData();
                 importPlaylist(uri);
             }
+        } else if (requestCode == REQUEST_EXPORT_FILE && resultCode == Activity.RESULT_OK) {
+            if (data != null) {
+                Uri uri = data.getData();
+                writePlaylistToFile(uri);
+            }
         }
+    }
+
+    private void exportPlaylist() {
+        Intent intent = new Intent(Intent.ACTION_CREATE_DOCUMENT);
+        intent.addCategory(Intent.CATEGORY_OPENABLE);
+        intent.setType("text/plain");
+        intent.putExtra(Intent.EXTRA_TITLE, playlistName + ".txt");
+        startActivityForResult(intent, REQUEST_EXPORT_FILE);
+    }
+
+    private void writePlaylistToFile(Uri uri) {
+        try {
+            OutputStream outputStream = requireContext().getContentResolver().openOutputStream(uri);
+            if (outputStream != null) {
+                for (Music music : playlistSongs) {
+                    String songName = stripFileExtension(music.title) + "\n";
+                    outputStream.write(songName.getBytes());
+                }
+                outputStream.close();
+                Toast.makeText(getContext(), "歌单已导出", Toast.LENGTH_LONG).show();
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+            Toast.makeText(getContext(), "导出失败: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private String stripFileExtension(String filename) {
+        int dotIndex = filename.lastIndexOf('.');
+        return (dotIndex == -1) ? filename : filename.substring(0, dotIndex);
     }
 
     private void importPlaylist(Uri uri) {
@@ -148,7 +182,7 @@ public class PlaylistDetailFragment extends Fragment implements FavoriteToggleLi
             String line;
             List<String> importedSongs = new ArrayList<>();
             while ((line = reader.readLine()) != null) {
-                importedSongs.add(line);
+                importedSongs.add(line.trim());
             }
             reader.close();
             inputStream.close();
@@ -166,14 +200,33 @@ public class PlaylistDetailFragment extends Fragment implements FavoriteToggleLi
 
         new Thread(() -> {
             List<Music> allMusic = musicDao.getAllMusic();
+            List<Music> existingSongs = musicDao.getMusicInPlaylist(playlistId);
             List<Music> songsToAdd = new ArrayList<>();
+            List<String> notFoundSongs = new ArrayList<>();
 
             for (String importedSong : importedSongs) {
+                String importedSongWithoutExtension = stripFileExtension(importedSong).trim().toLowerCase();
+                boolean songFound = false;
                 for (Music music : allMusic) {
-                    if (music.title.equals(importedSong)) {
-                        songsToAdd.add(music);
+                    String musicTitle = stripFileExtension(music.title).trim().toLowerCase();
+                    if (musicTitle.equals(importedSongWithoutExtension)) {
+                        // 检查歌曲是否已经存在于歌单中
+                        boolean alreadyExists = false;
+                        for (Music existingSong : existingSongs) {
+                            if (existingSong.id == music.id) {
+                                alreadyExists = true;
+                                break;
+                            }
+                        }
+                        if (!alreadyExists) {
+                            songsToAdd.add(music);
+                        }
+                        songFound = true;
                         break;
                     }
+                }
+                if (!songFound) {
+                    notFoundSongs.add(importedSong);
                 }
             }
 
@@ -183,28 +236,17 @@ public class PlaylistDetailFragment extends Fragment implements FavoriteToggleLi
             }
 
             requireActivity().runOnUiThread(() -> {
-                Toast.makeText(getContext(), "已导入 " + songsToAdd.size() + " 首歌曲", Toast.LENGTH_SHORT).show();
+                String message = "已导入 " + songsToAdd.size() + " 首歌曲";
+                if (!notFoundSongs.isEmpty()) {
+                    message += "，未找到 " + notFoundSongs.size() + " 首歌曲";
+                    for (String notFoundSong : notFoundSongs) {
+                        message += "\n- " + notFoundSong;
+                    }
+                }
+                Toast.makeText(getContext(), message, Toast.LENGTH_LONG).show();
                 loadPlaylistSongs();
             });
         }).start();
-    }
-
-    private void exportPlaylist() {
-        File dir = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS), "MyAppTest");
-        if (!dir.exists()) {
-            dir.mkdirs();
-        }
-        File file = new File(dir, playlistName + ".txt");
-
-        try (FileWriter writer = new FileWriter(file)) {
-            for (Music music : playlistSongs) {
-                writer.write(music.title + "\n");
-            }
-            Toast.makeText(getContext(), "歌单已导出到 " + file.getAbsolutePath(), Toast.LENGTH_LONG).show();
-        } catch (IOException e) {
-            e.printStackTrace();
-            Toast.makeText(getContext(), "导出失败: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-        }
     }
 
     @Override

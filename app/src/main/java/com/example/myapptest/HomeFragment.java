@@ -10,6 +10,8 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.ArrayAdapter;
+import android.widget.Toast;
+
 import androidx.fragment.app.Fragment;
 import java.util.ArrayList;
 import java.util.List;
@@ -194,13 +196,24 @@ public class HomeFragment extends Fragment {
         MusicDao musicDao = db.musicDao();
 
         new Thread(() -> {
-            Playlist playlist = playlists.get(position);
-            musicDao.deletePlaylist(playlist.id);
-            playlists.remove(position);
-            requireActivity().runOnUiThread(() -> {
-                playlistAdapter.remove(playlistAdapter.getItem(position));
-                playlistAdapter.notifyDataSetChanged();
-            });
+            try {
+                Playlist playlist = playlists.get(position);
+                // 首先删除与该歌单相关的所有 PlaylistSong 记录
+                musicDao.deletePlaylistSongs(playlist.id);
+                // 然后删除歌单本身
+                musicDao.deletePlaylist(playlist.id);
+                
+                requireActivity().runOnUiThread(() -> {
+                    playlists.remove(position);
+                    playlistAdapter.remove(playlistAdapter.getItem(position));
+                    playlistAdapter.notifyDataSetChanged();
+                    Toast.makeText(getContext(), "歌单已删除", Toast.LENGTH_SHORT).show();
+                });
+            } catch (Exception e) {
+                requireActivity().runOnUiThread(() -> {
+                    Toast.makeText(getContext(), "删除歌单失败: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                });
+            }
         }).start();
     }
 }
