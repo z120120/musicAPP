@@ -7,33 +7,35 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ListView;
 import android.widget.Toast;
-import android.widget.EditText; // Import EditText for search bar
+import android.widget.EditText;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.app.AlertDialog;
 import android.widget.ArrayAdapter;
-import android.widget.Button; // Import Button for clear playlist button
+import android.view.MenuInflater;
+import android.widget.PopupMenu;
+import android.widget.ImageButton;
 
 import androidx.fragment.app.Fragment;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public class PlaylistFragment extends Fragment implements FavoriteToggleListener, PlaylistAdapter.RemoveSongListener { // 实现接口
+public class PlaylistFragment extends Fragment implements FavoriteToggleListener, PlaylistAdapter.RemoveSongListener {
 
     private static final String TAG = "PlaylistFragment";
     private ListView playlistView;
     private List<Music> playlistSongs;
     private PlaylistAdapter adapter;
-    private EditText searchBar; // 添加搜索框
-    private int currentPlaylistId; // 添加这个字段来存储当前播放列表的ID
+    private EditText searchBar;
+    private int currentPlaylistId;
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_playlist, container, false);
 
         playlistView = view.findViewById(R.id.playlist_view);
-        searchBar = view.findViewById(R.id.search_bar); // 初始化搜索框
+        searchBar = view.findViewById(R.id.search_bar);
         playlistSongs = new ArrayList<>();
 
         loadPlaylistFromDatabase();
@@ -44,7 +46,6 @@ public class PlaylistFragment extends Fragment implements FavoriteToggleListener
             playMusic(originalPosition);
         });
 
-        // 添加搜索框的监听器
         searchBar.addTextChangedListener(new TextWatcher() {
             @Override
             public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
@@ -63,17 +64,8 @@ public class PlaylistFragment extends Fragment implements FavoriteToggleListener
             return true;
         });
 
-        // 添加清空播放列表按钮
-        Button clearPlaylistButton = view.findViewById(R.id.btn_clear_playlist);
-        clearPlaylistButton.setOnClickListener(v -> showClearPlaylistConfirmation());
-
-        // 添加全部添加到歌单按钮
-        Button addAllToPlaylistButton = view.findViewById(R.id.btn_add_all_to_playlist);
-        addAllToPlaylistButton.setOnClickListener(v -> showAddAllToPlaylistDialog());
-
-        // 添加全部添加到收藏按钮
-        Button addAllToFavoriteButton = view.findViewById(R.id.btn_add_all_to_favorite);
-        addAllToFavoriteButton.setOnClickListener(v -> addAllToFavorite());
+        ImageButton moreOptionsButton = view.findViewById(R.id.btn_more_options);
+        moreOptionsButton.setOnClickListener(v -> showMoreOptions(v));
 
         return view;
     }
@@ -86,7 +78,7 @@ public class PlaylistFragment extends Fragment implements FavoriteToggleListener
             try {
                 MusicCollection defaultCollection = musicDao.getDefaultCollection();
                 if (defaultCollection != null) {
-                    currentPlaylistId = defaultCollection.id; // 设置当前播放列表ID
+                    currentPlaylistId = defaultCollection.id;
                     List<Music> songs = musicDao.getMusicInCollection(currentPlaylistId);
                     if (getActivity() != null) {
                         getActivity().runOnUiThread(() -> {
@@ -132,7 +124,7 @@ public class PlaylistFragment extends Fragment implements FavoriteToggleListener
     }
 
     @Override
-    public void toggleFavorite(int position) { // 实现接口的方法
+    public void toggleFavorite(int position) {
         Music music = playlistSongs.get(position);
         music.isFavorite = !music.isFavorite;
         
@@ -251,14 +243,12 @@ public class PlaylistFragment extends Fragment implements FavoriteToggleListener
 
     @Override
     public void onRemoveSong(int position) {
-        // 实现移除歌曲的逻辑
         Music music = playlistSongs.get(position);
         
         AppDatabase db = AppDatabase.getDatabase(getContext());
         MusicDao musicDao = db.musicDao();
 
         new Thread(() -> {
-            // 从播放列表中移除歌曲
             musicDao.deletePlaylistSong(currentPlaylistId, music.id);
             if (getActivity() != null) {
                 getActivity().runOnUiThread(() -> {
@@ -293,5 +283,28 @@ public class PlaylistFragment extends Fragment implements FavoriteToggleListener
                 });
             }
         }).start();
+    }
+
+    private void showMoreOptions(View v) {
+        PopupMenu popup = new PopupMenu(getContext(), v);
+        MenuInflater inflater = popup.getMenuInflater();
+        inflater.inflate(R.menu.playlist_options_menu, popup.getMenu());
+
+        popup.setOnMenuItemClickListener(item -> {
+            int itemId = item.getItemId();
+            if (itemId == R.id.menu_add_all_to_playlist) {
+                showAddAllToPlaylistDialog();
+                return true;
+            } else if (itemId == R.id.menu_add_all_to_favorite) {
+                addAllToFavorite();
+                return true;
+            } else if (itemId == R.id.menu_clear_playlist) {
+                showClearPlaylistConfirmation();
+                return true;
+            }
+            return false;
+        });
+
+        popup.show();
     }
 }
