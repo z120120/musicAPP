@@ -51,6 +51,18 @@
             android:layout_weight="1"
             android:text="导入"
             android:layout_marginStart="8dp" />
+
+        <Button
+            android:id="@+id/btn_add_all_to_playlist"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="全部添加到歌单"/>
+
+        <Button
+            android:id="@+id/btn_clear_favorites"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="清空喜欢列表"/>
     </LinearLayout>
 
     <ListView

@@ -14,6 +14,8 @@ import android.widget.Button;
 import android.widget.ImageButton; // 添加这行
 import android.widget.ListView;
 import android.widget.Toast;
+import android.app.AlertDialog;
+import android.widget.ArrayAdapter;
 
 import androidx.annotation.NonNull;
 import androidx.fragment.app.Fragment;
@@ -71,6 +73,12 @@ public class FavoriteFragment extends Fragment implements FavoriteToggleListener
         refreshButton.setOnClickListener(v -> {
             loadFavoriteSongsFromDatabase(); // 手动刷新喜欢的音乐列表
         });
+
+        Button addAllToPlaylistButton = view.findViewById(R.id.btn_add_all_to_playlist);
+        addAllToPlaylistButton.setOnClickListener(v -> showAddAllToPlaylistDialog());
+
+        Button clearFavoritesButton = view.findViewById(R.id.btn_clear_favorites);
+        clearFavoritesButton.setOnClickListener(v -> showClearFavoritesConfirmation());
 
         return view;
     }
@@ -285,6 +293,79 @@ public class FavoriteFragment extends Fragment implements FavoriteToggleListener
                     Toast.makeText(getContext(), "已从喜爱中移除", Toast.LENGTH_SHORT).show();
                 });
             }
+        }).start();
+    }
+
+    private void showAddAllToPlaylistDialog() {
+        AppDatabase db = AppDatabase.getDatabase(getContext());
+        MusicDao musicDao = db.musicDao();
+
+        new Thread(() -> {
+            List<Playlist> playlists = musicDao.getAllPlaylists();
+            requireActivity().runOnUiThread(() -> {
+                AlertDialog.Builder builder = new AlertDialog.Builder(getContext());
+                builder.setTitle("选择要添加到的歌单");
+
+                ArrayAdapter<String> playlistAdapter = new ArrayAdapter<>(getContext(), android.R.layout.simple_list_item_1);
+                for (Playlist playlist : playlists) {
+                    playlistAdapter.add(playlist.name);
+                }
+
+                builder.setAdapter(playlistAdapter, (dialog, which) -> {
+                    Playlist selectedPlaylist = playlists.get(which);
+                    addAllFavoritesToPlaylist(selectedPlaylist.id);
+                });
+
+                builder.setNegativeButton("取消", (dialog, which) -> dialog.dismiss());
+                builder.show();
+            });
+        }).start();
+    }
+
+    private void addAllFavoritesToPlaylist(int playlistId) {
+        AppDatabase db = AppDatabase.getDatabase(getContext());
+        MusicDao musicDao = db.musicDao();
+
+        new Thread(() -> {
+            List<PlaylistSong> playlistSongs = new ArrayList<>();
+            for (Music music : favoriteSongs) {
+                PlaylistSong playlistSong = new PlaylistSong(playlistId, music.id);
+                playlistSongs.add(playlistSong);
+            }
+            musicDao.insertPlaylistSongs(playlistSongs); // 假设 MusicDao 中有批量插入的方法
+
+            requireActivity().runOnUiThread(() -> {
+                Toast.makeText(getContext(), "已将所有喜欢的音乐添加到歌单", Toast.LENGTH_SHORT).show();
+            });
+        }).start();
+    }
+
+    private void showClearFavoritesConfirmation() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(getContext());
+        builder.setTitle("清空喜欢列表");
+        builder.setMessage("确定要清空所有喜欢的音乐吗？此操作不可撤销。");
+        builder.setPositiveButton("确定", (dialog, which) -> clearFavorites());
+        builder.setNegativeButton("取消", (dialog, which) -> dialog.dismiss());
+        builder.show();
+    }
+
+    private void clearFavorites() {
+        AppDatabase db = AppDatabase.getDatabase(getContext());
+        MusicDao musicDao = db.musicDao();
+
+        new Thread(() -> {
+            List<Music> allMusic = musicDao.getAllMusic();
+            for (Music music : allMusic) {
+                if (music.isFavorite) {
+                    music.isFavorite = false;
+                    musicDao.updateMusic(music);
+                }
+            }
+            requireActivity().runOnUiThread(() -> {
+                favoriteSongs.clear();
+                updateFavoriteListView();
+                Toast.makeText(getContext(), "已清空喜欢列表", Toast.LENGTH_SHORT).show();
+            });
         }).start();
     }
 }
