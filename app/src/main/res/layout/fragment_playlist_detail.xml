@@ -32,6 +32,13 @@
             android:layout_weight="1"
             android:text="导入歌单" />
 
+        <Button
+            android:id="@+id/btn_clear_playlist"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="清空歌单" />
+
     </LinearLayout>
 
     <ListView

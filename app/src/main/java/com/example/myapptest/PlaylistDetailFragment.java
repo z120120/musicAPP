@@ -2,6 +2,7 @@ package com.example.myapptest;
 
 import android.Manifest;
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.net.Uri;
@@ -90,6 +91,14 @@ public class PlaylistDetailFragment extends Fragment implements FavoriteToggleLi
             Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
             intent.setType("text/plain");
             startActivityForResult(intent, REQUEST_IMPORT_FILE);
+        });
+
+        Button clearPlaylistButton = view.findViewById(R.id.btn_clear_playlist);
+        clearPlaylistButton.setOnClickListener(v -> showClearPlaylistConfirmation());
+
+        songListView.setOnItemLongClickListener((parent, view1, position, id) -> {
+            showRemoveSongConfirmation(position);
+            return true;
         });
 
         return view;
@@ -245,6 +254,53 @@ public class PlaylistDetailFragment extends Fragment implements FavoriteToggleLi
                 }
                 Toast.makeText(getContext(), message, Toast.LENGTH_LONG).show();
                 loadPlaylistSongs();
+            });
+        }).start();
+    }
+
+    private void showClearPlaylistConfirmation() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(getContext());
+        builder.setTitle("清空歌单");
+        builder.setMessage("确定要清空这个歌单吗？此操作不可撤销。");
+        builder.setPositiveButton("确定", (dialog, which) -> clearPlaylist());
+        builder.setNegativeButton("取消", (dialog, which) -> dialog.dismiss());
+        builder.show();
+    }
+
+    private void clearPlaylist() {
+        AppDatabase db = AppDatabase.getDatabase(getContext());
+        MusicDao musicDao = db.musicDao();
+
+        new Thread(() -> {
+            musicDao.deletePlaylistSongs(playlistId);
+            requireActivity().runOnUiThread(() -> {
+                playlistSongs.clear();
+                updateSongListView();
+                Toast.makeText(getContext(), "歌单已清空", Toast.LENGTH_SHORT).show();
+            });
+        }).start();
+    }
+
+    private void showRemoveSongConfirmation(int position) {
+        AlertDialog.Builder builder = new AlertDialog.Builder(getContext());
+        builder.setTitle("移除歌曲");
+        builder.setMessage("确定要从歌单中移除这首歌吗？");
+        builder.setPositiveButton("确定", (dialog, which) -> removeSongFromPlaylist(position));
+        builder.setNegativeButton("取消", (dialog, which) -> dialog.dismiss());
+        builder.show();
+    }
+
+    private void removeSongFromPlaylist(int position) {
+        AppDatabase db = AppDatabase.getDatabase(getContext());
+        MusicDao musicDao = db.musicDao();
+
+        new Thread(() -> {
+            Music musicToRemove = playlistSongs.get(position);
+            musicDao.deletePlaylistSong(playlistId, musicToRemove.id);
+            requireActivity().runOnUiThread(() -> {
+                playlistSongs.remove(position);
+                updateSongListView();
+                Toast.makeText(getContext(), "歌曲已从歌单中移除", Toast.LENGTH_SHORT).show();
             });
         }).start();
     }

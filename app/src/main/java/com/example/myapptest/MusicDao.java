@@ -70,4 +70,7 @@ public interface MusicDao {
 
     @Query("DELETE FROM PlaylistSong WHERE playlistId = :playlistId")
     void deletePlaylistSongs(int playlistId);
+
+    @Query("DELETE FROM PlaylistSong WHERE playlistId = :playlistId AND musicId = :musicId")
+    void deletePlaylistSong(int playlistId, int musicId);
 }
