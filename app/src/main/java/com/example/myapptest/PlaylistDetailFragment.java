@@ -1,15 +1,30 @@
 package com.example.myapptest;
 
+import android.Manifest;
+import android.app.Activity;
+import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.net.Uri;
 import android.os.Bundle;
+import android.os.Environment;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -17,6 +32,8 @@ public class PlaylistDetailFragment extends Fragment implements FavoriteToggleLi
 
     private static final String ARG_PLAYLIST_ID = "playlist_id";
     private static final String ARG_PLAYLIST_NAME = "playlist_name";
+    private static final int REQUEST_WRITE_STORAGE = 112;
+    private static final int REQUEST_IMPORT_FILE = 113;
 
     private int playlistId;
     private String playlistName;
@@ -58,6 +75,24 @@ public class PlaylistDetailFragment extends Fragment implements FavoriteToggleLi
             playMusic(position);
         });
 
+        Button exportButton = view.findViewById(R.id.btn_export_playlist);
+        exportButton.setOnClickListener(v -> {
+            if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.WRITE_EXTERNAL_STORAGE)
+                    != PackageManager.PERMISSION_GRANTED) {
+                ActivityCompat.requestPermissions(requireActivity(),
+                        new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, REQUEST_WRITE_STORAGE);
+            } else {
+                exportPlaylist();
+            }
+        });
+
+        Button importButton = view.findViewById(R.id.btn_import_playlist);
+        importButton.setOnClickListener(v -> {
+            Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
+            intent.setType("text/plain");
+            startActivityForResult(intent, REQUEST_IMPORT_FILE);
+        });
+
         return view;
     }
 
@@ -92,6 +127,83 @@ public class PlaylistDetailFragment extends Fragment implements FavoriteToggleLi
         MainActivity activity = (MainActivity) getActivity();
         if (activity != null) {
             activity.playMusic(playlistSongs, position);
+        }
+    }
+
+    @Override
+    public void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == REQUEST_IMPORT_FILE && resultCode == Activity.RESULT_OK) {
+            if (data != null) {
+                Uri uri = data.getData();
+                importPlaylist(uri);
+            }
+        }
+    }
+
+    private void importPlaylist(Uri uri) {
+        try {
+            InputStream inputStream = requireContext().getContentResolver().openInputStream(uri);
+            BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
+            String line;
+            List<String> importedSongs = new ArrayList<>();
+            while ((line = reader.readLine()) != null) {
+                importedSongs.add(line);
+            }
+            reader.close();
+            inputStream.close();
+
+            addImportedSongsToPlaylist(importedSongs);
+        } catch (IOException e) {
+            e.printStackTrace();
+            Toast.makeText(getContext(), "导入失败: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private void addImportedSongsToPlaylist(List<String> importedSongs) {
+        AppDatabase db = AppDatabase.getDatabase(getContext());
+        MusicDao musicDao = db.musicDao();
+
+        new Thread(() -> {
+            List<Music> allMusic = musicDao.getAllMusic();
+            List<Music> songsToAdd = new ArrayList<>();
+
+            for (String importedSong : importedSongs) {
+                for (Music music : allMusic) {
+                    if (music.title.equals(importedSong)) {
+                        songsToAdd.add(music);
+                        break;
+                    }
+                }
+            }
+
+            for (Music music : songsToAdd) {
+                PlaylistSong playlistSong = new PlaylistSong(playlistId, music.id);
+                musicDao.insertPlaylistSong(playlistSong);
+            }
+
+            requireActivity().runOnUiThread(() -> {
+                Toast.makeText(getContext(), "已导入 " + songsToAdd.size() + " 首歌曲", Toast.LENGTH_SHORT).show();
+                loadPlaylistSongs();
+            });
+        }).start();
+    }
+
+    private void exportPlaylist() {
+        File dir = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS), "MyAppTest");
+        if (!dir.exists()) {
+            dir.mkdirs();
+        }
+        File file = new File(dir, playlistName + ".txt");
+
+        try (FileWriter writer = new FileWriter(file)) {
+            for (Music music : playlistSongs) {
+                writer.write(music.title + "\n");
+            }
+            Toast.makeText(getContext(), "歌单已导出到 " + file.getAbsolutePath(), Toast.LENGTH_LONG).show();
+        } catch (IOException e) {
+            e.printStackTrace();
+            Toast.makeText(getContext(), "导出失败: " + e.getMessage(), Toast.LENGTH_SHORT).show();
         }
     }
 
