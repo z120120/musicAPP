@@ -12,6 +12,7 @@ import android.text.Editable;
 import android.text.TextWatcher;
 import android.app.AlertDialog;
 import android.widget.ArrayAdapter;
+import android.widget.Button; // Import Button for clear playlist button
 
 import androidx.fragment.app.Fragment;
 
@@ -61,6 +62,18 @@ public class PlaylistFragment extends Fragment implements FavoriteToggleListener
             showAddToPlaylistDialog(position);
             return true;
         });
+
+        // 添加清空播放列表按钮
+        Button clearPlaylistButton = view.findViewById(R.id.btn_clear_playlist);
+        clearPlaylistButton.setOnClickListener(v -> showClearPlaylistConfirmation());
+
+        // 添加全部添加到歌单按钮
+        Button addAllToPlaylistButton = view.findViewById(R.id.btn_add_all_to_playlist);
+        addAllToPlaylistButton.setOnClickListener(v -> showAddAllToPlaylistDialog());
+
+        // 添加全部添加到收藏按钮
+        Button addAllToFavoriteButton = view.findViewById(R.id.btn_add_all_to_favorite);
+        addAllToFavoriteButton.setOnClickListener(v -> addAllToFavorite());
 
         return view;
     }
@@ -177,6 +190,65 @@ public class PlaylistFragment extends Fragment implements FavoriteToggleListener
         }).start();
     }
 
+    private void showAddAllToPlaylistDialog() {
+        AppDatabase db = AppDatabase.getDatabase(getContext());
+        MusicDao musicDao = db.musicDao();
+
+        new Thread(() -> {
+            List<Playlist> playlists = musicDao.getAllPlaylists();
+            requireActivity().runOnUiThread(() -> {
+                AlertDialog.Builder builder = new AlertDialog.Builder(getContext());
+                builder.setTitle("选择要添加到的歌单");
+
+                ArrayAdapter<String> playlistAdapter = new ArrayAdapter<>(getContext(), android.R.layout.simple_list_item_1);
+                for (Playlist playlist : playlists) {
+                    playlistAdapter.add(playlist.name);
+                }
+
+                builder.setAdapter(playlistAdapter, (dialog, which) -> {
+                    Playlist selectedPlaylist = playlists.get(which);
+                    addAllMusicToPlaylist(selectedPlaylist.id);
+                });
+
+                builder.setNegativeButton("取消", (dialog, which) -> dialog.dismiss());
+                builder.show();
+            });
+        }).start();
+    }
+
+    private void addAllMusicToPlaylist(int playlistId) {
+        AppDatabase db = AppDatabase.getDatabase(getContext());
+        MusicDao musicDao = db.musicDao();
+
+        new Thread(() -> {
+            for (Music music : playlistSongs) {
+                PlaylistSong playlistSong = new PlaylistSong(playlistId, music.id);
+                musicDao.insertPlaylistSong(playlistSong);
+            }
+            requireActivity().runOnUiThread(() -> {
+                Toast.makeText(getContext(), "已将所有音乐添加到歌单", Toast.LENGTH_SHORT).show();
+            });
+        }).start();
+    }
+
+    private void addAllToFavorite() {
+        AppDatabase db = AppDatabase.getDatabase(getContext());
+        MusicDao musicDao = db.musicDao();
+
+        new Thread(() -> {
+            for (Music music : playlistSongs) {
+                if (!music.isFavorite) {
+                    music.isFavorite = true;
+                    musicDao.updateMusic(music);
+                }
+            }
+            requireActivity().runOnUiThread(() -> {
+                Toast.makeText(getContext(), "已将所有音乐添加到收藏", Toast.LENGTH_SHORT).show();
+                adapter.notifyDataSetChanged();
+            });
+        }).start();
+    }
+
     @Override
     public void onRemoveSong(int position) {
         // 实现移除歌曲的逻辑
@@ -193,6 +265,31 @@ public class PlaylistFragment extends Fragment implements FavoriteToggleListener
                     playlistSongs.remove(position);
                     adapter.notifyDataSetChanged();
                     Toast.makeText(getContext(), "已从播放列表中移除", Toast.LENGTH_SHORT).show();
+                });
+            }
+        }).start();
+    }
+
+    private void showClearPlaylistConfirmation() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(getContext());
+        builder.setTitle("清空播放列表");
+        builder.setMessage("确定要清空当前播放列表吗？此操作不可撤销。");
+        builder.setPositiveButton("确定", (dialog, which) -> clearPlaylist());
+        builder.setNegativeButton("取消", (dialog, which) -> dialog.dismiss());
+        builder.show();
+    }
+
+    private void clearPlaylist() {
+        AppDatabase db = AppDatabase.getDatabase(getContext());
+        MusicDao musicDao = db.musicDao();
+
+        new Thread(() -> {
+            musicDao.deletePlaylistSongs(currentPlaylistId);
+            if (getActivity() != null) {
+                getActivity().runOnUiThread(() -> {
+                    playlistSongs.clear();
+                    updatePlaylistView();
+                    Toast.makeText(getContext(), "播放列表已清空", Toast.LENGTH_SHORT).show();
                 });
             }
         }).start();
