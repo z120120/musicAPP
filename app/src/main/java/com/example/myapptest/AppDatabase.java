@@ -6,7 +6,7 @@ import androidx.room.Database;
 import androidx.room.Room;
 import androidx.room.RoomDatabase;
 
-@Database(entities = {Music.class, MusicCollection.class, MusicCollectionSong.class, PlayQueue.class, Playlist.class}, version = 2, exportSchema = false)
+@Database(entities = {Music.class, MusicCollection.class, MusicCollectionSong.class, PlayQueue.class, Playlist.class, PlaylistSong.class}, version = 3, exportSchema = false)
 public abstract class AppDatabase extends RoomDatabase {
     public abstract MusicDao musicDao();
 

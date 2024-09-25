@@ -61,4 +61,10 @@ public interface MusicDao {
 
     @Query("DELETE FROM Playlist WHERE id = :playlistId")
     void deletePlaylist(int playlistId);
+
+    @Insert
+    long insertPlaylistSong(PlaylistSong playlistSong);
+
+    @Query("SELECT * FROM Music m INNER JOIN PlaylistSong ps ON m.id = ps.musicId WHERE ps.playlistId = :playlistId")
+    List<Music> getMusicInPlaylist(int playlistId);
 }

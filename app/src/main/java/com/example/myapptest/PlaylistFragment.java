@@ -10,6 +10,8 @@ import android.widget.Toast;
 import android.widget.EditText; // Import EditText for search bar
 import android.text.Editable;
 import android.text.TextWatcher;
+import android.app.AlertDialog;
+import android.widget.ArrayAdapter;
 
 import androidx.fragment.app.Fragment;
 
@@ -52,6 +54,11 @@ public class PlaylistFragment extends Fragment implements FavoriteToggleListener
 
             @Override
             public void afterTextChanged(Editable s) {}
+        });
+
+        playlistView.setOnItemLongClickListener((parent, view1, position, id) -> {
+            showAddToPlaylistDialog(position);
+            return true;
         });
 
         return view;
@@ -125,6 +132,46 @@ public class PlaylistFragment extends Fragment implements FavoriteToggleListener
                     Toast.makeText(getContext(), music.isFavorite ? "已添加到喜爱" : "已从喜爱中移除", Toast.LENGTH_SHORT).show();
                 });
             }
+        }).start();
+    }
+
+    private void showAddToPlaylistDialog(int position) {
+        AppDatabase db = AppDatabase.getDatabase(getContext());
+        MusicDao musicDao = db.musicDao();
+
+        new Thread(() -> {
+            List<Playlist> playlists = musicDao.getAllPlaylists();
+            requireActivity().runOnUiThread(() -> {
+                AlertDialog.Builder builder = new AlertDialog.Builder(getContext());
+                builder.setTitle("添加到歌单");
+
+                ArrayAdapter<String> playlistAdapter = new ArrayAdapter<>(getContext(), android.R.layout.simple_list_item_1);
+                for (Playlist playlist : playlists) {
+                    playlistAdapter.add(playlist.name);
+                }
+
+                builder.setAdapter(playlistAdapter, (dialog, which) -> {
+                    Playlist selectedPlaylist = playlists.get(which);
+                    addMusicToPlaylist(position, selectedPlaylist.id);
+                });
+
+                builder.setNegativeButton("取消", (dialog, which) -> dialog.dismiss());
+                builder.show();
+            });
+        }).start();
+    }
+
+    private void addMusicToPlaylist(int position, int playlistId) {
+        Music selectedMusic = adapter.getItem(position);
+        AppDatabase db = AppDatabase.getDatabase(getContext());
+        MusicDao musicDao = db.musicDao();
+
+        new Thread(() -> {
+            PlaylistSong playlistSong = new PlaylistSong(playlistId, selectedMusic.id);
+            musicDao.insertPlaylistSong(playlistSong);
+            requireActivity().runOnUiThread(() -> {
+                Toast.makeText(getContext(), "已添加到歌单", Toast.LENGTH_SHORT).show();
+            });
         }).start();
     }
 }

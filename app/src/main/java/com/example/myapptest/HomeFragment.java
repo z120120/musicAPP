@@ -56,7 +56,12 @@ public class HomeFragment extends Fragment {
         playlistListView.setAdapter(playlistAdapter);
 
         playlistListView.setOnItemClickListener((parent, view1, position, id) -> {
-            // 这里可以添加点击歌单时的操作，比如打开歌单详情页
+            Playlist selectedPlaylist = playlists.get(position);
+            Fragment fragment = PlaylistDetailFragment.newInstance(selectedPlaylist.id, selectedPlaylist.name);
+            getParentFragmentManager().beginTransaction()
+                    .replace(R.id.fragment_container, fragment)
+                    .addToBackStack(null)
+                    .commit();
         });
 
         playlistListView.setOnItemLongClickListener((parent, view1, position, id) -> {
