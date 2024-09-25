@@ -19,6 +19,8 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Random;
 
+import com.example.myapptest.utils.FileUtils;
+
 public class PlaybackService extends Service implements MediaPlayer.OnCompletionListener {
 
     private static final String TAG = "PlaybackService";
@@ -155,19 +157,8 @@ public class PlaybackService extends Service implements MediaPlayer.OnCompletion
 
     private void notifySongChange(String title) {
         if (songChangeListener != null) {
-            songChangeListener.onSongChange(stripFileExtension(title)); // 修改这一行，去除后缀
+            songChangeListener.onSongChange(FileUtils.stripFileExtension(title));
         }
-    }
-
-    private String stripFileExtension(String filename) {
-        if (filename == null) {
-            return "";
-        }
-        int dotIndex = filename.lastIndexOf('.');
-        if (dotIndex > 0) {
-            return filename.substring(0, dotIndex);
-        }
-        return filename;
     }
 
     private void playMusic(int index) {

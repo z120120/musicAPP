@@ -23,6 +23,8 @@ import androidx.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.example.myapptest.utils.DatabaseUtils;
+
 public class MusicLibraryFragment extends Fragment {
 
     private static final String TAG = "MusicLibraryFragment";
@@ -94,18 +96,9 @@ public class MusicLibraryFragment extends Fragment {
     }
 
     private void loadMusicFromDatabase() {
-        Log.d(TAG, "loadMusicFromDatabase: 开始从数据库加载音乐");
-        if (!isAdded()) {
-            Log.e(TAG, "loadMusicFromDatabase: Fragment 未附加到 Activity");
-            return;
-        }
-        AppDatabase db = AppDatabase.getDatabase(requireContext());
-        MusicDao musicDao = db.musicDao();
-
-        new Thread(() -> {
-            try {
-                List<Music> music = musicDao.getAllMusic();
-                Log.d(TAG, "loadMusicFromDatabase: 从数据库加载了 " + music.size() + " 首歌曲");
+        DatabaseUtils.loadMusicFromDatabase(requireContext(), new DatabaseUtils.OnMusicLoadedListener() {
+            @Override
+            public void onMusicLoaded(List<Music> music) {
                 if (isAdded()) {
                     requireActivity().runOnUiThread(() -> {
                         musicList.clear();
@@ -113,15 +106,17 @@ public class MusicLibraryFragment extends Fragment {
                         updateMusicList();
                     });
                 }
-            } catch (Exception e) {
-                Log.e(TAG, "loadMusicFromDatabase: 加载音乐失败", e);
+            }
+
+            @Override
+            public void onError(Exception e) {
                 if (isAdded()) {
                     requireActivity().runOnUiThread(() -> 
                         Toast.makeText(requireContext(), "加载音乐列表失败: " + e.getMessage(), Toast.LENGTH_LONG).show()
                     );
                 }
             }
-        }).start();
+        });
     }
 
     private void updateMusicList() {

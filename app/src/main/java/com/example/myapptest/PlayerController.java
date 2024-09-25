@@ -9,6 +9,7 @@ import android.os.Handler;
 import android.widget.SeekBar;
 import android.widget.ImageView;
 import android.graphics.Bitmap;
+import com.example.myapptest.utils.UIUtils;
 
 public class PlayerController {
     private PlaybackService playbackService;
@@ -91,10 +92,7 @@ public class PlayerController {
     }
 
     public void updateSongTitle() {
-        if (playbackService == null || songTitleView == null) return;
-        String title = playbackService.getCurrentSongTitle();
-        String strippedTitle = stripFileExtension(title);
-        songTitleView.setText(strippedTitle);
+        UIUtils.updateSongTitle(playbackService, songTitleView);
     }
 
     private String stripFileExtension(String filename) {

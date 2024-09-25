@@ -22,6 +22,8 @@ import androidx.documentfile.provider.DocumentFile;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.example.myapptest.utils.PermissionUtils;
+
 public class MusicScanActivity extends AppCompatActivity {
 
     private static final String TAG = "MusicScanActivity";
@@ -51,12 +53,7 @@ public class MusicScanActivity extends AppCompatActivity {
     }
 
     private void checkPermissionAndSelectFolder() {
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE)
-                != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(this,
-                    new String[]{Manifest.permission.READ_EXTERNAL_STORAGE},
-                    REQUEST_PERMISSION_CODE);
-        } else {
+        if (PermissionUtils.checkAndRequestPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE, REQUEST_PERMISSION_CODE)) {
             selectFolder();
         }
     }
