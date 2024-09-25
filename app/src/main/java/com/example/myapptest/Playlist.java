@@ -9,10 +9,8 @@ public class Playlist {
     public int id;
 
     public String name;
-    public boolean isDefault;
 
-    public Playlist(String name, boolean isDefault) {
+    public Playlist(String name) {
         this.name = name;
-        this.isDefault = isDefault;
     }
 }

@@ -49,4 +49,16 @@ public interface MusicDao {
 
     @Update
     void updateMusicList(List<Music> musicList);
+
+    @Insert
+    long insertPlaylist(Playlist playlist);
+
+    @Query("SELECT * FROM Playlist")
+    List<Playlist> getAllPlaylists();
+
+    @Query("UPDATE Playlist SET name = :newName WHERE id = :playlistId")
+    void updatePlaylistName(int playlistId, String newName);
+
+    @Query("DELETE FROM Playlist WHERE id = :playlistId")
+    void deletePlaylist(int playlistId);
 }

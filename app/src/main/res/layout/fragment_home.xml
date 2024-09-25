@@ -23,4 +23,16 @@
         android:layout_height="wrap_content"
         android:text="我的喜欢" />
 
+    <Button
+        android:id="@+id/btn_create_playlist"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="创建歌单" />
+
+    <ListView
+        android:id="@+id/playlist_list_view"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1" />
+
 </LinearLayout>
