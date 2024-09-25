@@ -16,6 +16,10 @@ import android.widget.ListView;
 import android.widget.Toast;
 import android.app.AlertDialog;
 import android.widget.ArrayAdapter;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
+import android.widget.PopupMenu;
 
 import androidx.annotation.NonNull;
 import androidx.fragment.app.Fragment;
@@ -30,6 +34,7 @@ import java.io.InputStreamReader;
 import java.io.OutputStream; // 添加这行
 import java.util.ArrayList;
 import java.util.List;
+import com.example.myapptest.R;
 
 public class FavoriteFragment extends Fragment implements FavoriteToggleListener, PlaylistAdapter.RemoveSongListener { // 实现接口
 
@@ -53,34 +58,36 @@ public class FavoriteFragment extends Fragment implements FavoriteToggleListener
             playMusic(position);
         });
 
-        Button exportButton = view.findViewById(R.id.btn_export_favorites);
-        exportButton.setOnClickListener(v -> {
-            if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.WRITE_EXTERNAL_STORAGE)
-                    != PackageManager.PERMISSION_GRANTED) {
-                ActivityCompat.requestPermissions(requireActivity(),
-                        new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, 1);
-            } else {
-                exportFavoritesToTxt();
-            }
-        });
-
-        Button importButton = view.findViewById(R.id.btn_import_favorites); // 初始化导入按钮
-        importButton.setOnClickListener(v -> {
-            importFavoritesFromTxt();
-        });
-
-        ImageButton refreshButton = view.findViewById(R.id.btn_refresh_favorites); // 初始化刷新按钮
-        refreshButton.setOnClickListener(v -> {
-            loadFavoriteSongsFromDatabase(); // 手动刷新喜欢的音乐列表
-        });
-
-        Button addAllToPlaylistButton = view.findViewById(R.id.btn_add_all_to_playlist);
-        addAllToPlaylistButton.setOnClickListener(v -> showAddAllToPlaylistDialog());
-
-        Button clearFavoritesButton = view.findViewById(R.id.btn_clear_favorites);
-        clearFavoritesButton.setOnClickListener(v -> showClearFavoritesConfirmation());
+        ImageButton moreOptionsButton = view.findViewById(R.id.btn_more_options);
+        moreOptionsButton.setOnClickListener(v -> showMoreOptions(v));
 
         return view;
+    }
+
+    private void showMoreOptions(View v) {
+        PopupMenu popup = new PopupMenu(getContext(), v);
+        MenuInflater inflater = popup.getMenuInflater();
+        inflater.inflate(R.menu.favorite_options_menu, popup.getMenu());
+
+        popup.setOnMenuItemClickListener(item -> {
+            int itemId = item.getItemId();
+            if (itemId == R.id.menu_export) {
+                exportFavoritesToTxt();
+                return true;
+            } else if (itemId == R.id.menu_import) {
+                importFavoritesFromTxt();
+                return true;
+            } else if (itemId == R.id.menu_add_to_playlist) {
+                showAddAllToPlaylistDialog();
+                return true;
+            } else if (itemId == R.id.menu_clear) {
+                showClearFavoritesConfirmation();
+                return true;
+            }
+            return false;
+        });
+
+        popup.show();
     }
 
     @Override

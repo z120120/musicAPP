@@ -9,60 +9,33 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
-        android:gravity="center_vertical">
+        android:gravity="center_vertical"
+        android:layout_marginBottom="16dp">
 
         <TextView
-            android:layout_width="wrap_content"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:text="我的喜欢"
             android:textSize="24sp"
-            android:layout_weight="1"
-            android:layout_marginBottom="16dp"/>
+            android:layout_weight="1"/>
 
         <ImageButton
             android:id="@+id/btn_refresh_favorites"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:src="@drawable/ic_refresh"
-            android:contentDescription="刷新喜欢的音乐"
+            android:contentDescription="刷新"
             android:background="?attr/selectableItemBackgroundBorderless"
-            android:layout_marginBottom="16dp" />
-    </LinearLayout>
+            android:padding="8dp"/>
 
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:gravity="center_vertical"
-        android:layout_marginTop="8dp">
-
-        <Button
-            android:id="@+id/btn_export_favorites"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="导出"
-            android:layout_marginEnd="8dp" />
-
-        <Button
-            android:id="@+id/btn_import_favorites"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="导入"
-            android:layout_marginStart="8dp" />
-
-        <Button
-            android:id="@+id/btn_add_all_to_playlist"
+        <ImageButton
+            android:id="@+id/btn_more_options"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="全部添加到歌单"/>
-
-        <Button
-            android:id="@+id/btn_clear_favorites"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="清空喜欢列表"/>
+            android:src="@drawable/ic_more_vert"
+            android:contentDescription="更多选项"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:padding="8dp"/>
     </LinearLayout>
 
     <ListView
