@@ -27,7 +27,7 @@ import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.List;
 
-public class PlaylistDetailFragment extends Fragment implements FavoriteToggleListener {
+public class PlaylistDetailFragment extends Fragment implements FavoriteToggleListener, PlaylistAdapter.RemoveSongListener {
 
     private static final String ARG_PLAYLIST_ID = "playlist_id";
     private static final String ARG_PLAYLIST_NAME = "playlist_name";
@@ -97,7 +97,7 @@ public class PlaylistDetailFragment extends Fragment implements FavoriteToggleLi
         clearPlaylistButton.setOnClickListener(v -> showClearPlaylistConfirmation());
 
         songListView.setOnItemLongClickListener((parent, view1, position, id) -> {
-            showRemoveSongConfirmation(position);
+            onRemoveSong(position);
             return true;
         });
 
@@ -123,7 +123,7 @@ public class PlaylistDetailFragment extends Fragment implements FavoriteToggleLi
     private void updateSongListView() {
         if (getContext() == null) return;
 
-        adapter = new PlaylistAdapter(getContext(), playlistSongs, this);
+        adapter = new PlaylistAdapter(getContext(), playlistSongs, this, this);
         songListView.setAdapter(adapter);
 
         if (playlistSongs.isEmpty()) {
@@ -281,13 +281,9 @@ public class PlaylistDetailFragment extends Fragment implements FavoriteToggleLi
         }).start();
     }
 
-    private void showRemoveSongConfirmation(int position) {
-        AlertDialog.Builder builder = new AlertDialog.Builder(getContext());
-        builder.setTitle("移除歌曲");
-        builder.setMessage("确定要从歌单中移除这首歌吗？");
-        builder.setPositiveButton("确定", (dialog, which) -> removeSongFromPlaylist(position));
-        builder.setNegativeButton("取消", (dialog, which) -> dialog.dismiss());
-        builder.show();
+    @Override
+    public void onRemoveSong(int position) {
+        removeSongFromPlaylist(position);
     }
 
     private void removeSongFromPlaylist(int position) {

@@ -21,13 +21,15 @@ public class PlaylistAdapter extends ArrayAdapter<Music> {
     private final List<Music> songs;
     private final List<Music> filteredSongs; // 添加过滤后的歌曲列表
     private final FavoriteToggleListener listener; // 使用接口
+    private final RemoveSongListener removeSongListener; // 添加这个接口
 
-    public PlaylistAdapter(Context context, List<Music> songs, FavoriteToggleListener listener) { // 修改构造函数
+    public PlaylistAdapter(Context context, List<Music> songs, FavoriteToggleListener listener, RemoveSongListener removeSongListener) { // 修改构造函数
         super(context, R.layout.list_item_playlist, songs);
         this.context = context;
         this.songs = songs;
         this.filteredSongs = new ArrayList<>(songs); // 初始化过滤后的歌曲列表
         this.listener = listener; // 赋值接口
+        this.removeSongListener = removeSongListener;
     }
 
     @NonNull
@@ -56,6 +58,15 @@ public class PlaylistAdapter extends ArrayAdapter<Music> {
                 listener.toggleFavorite(originalPosition);
             }
             notifyDataSetChanged(); // 确保在点击喜欢图标后刷新列表
+        });
+
+        // 添加移除图标的点击监听器
+        ImageView removeIcon = convertView.findViewById(R.id.remove_icon);
+        removeIcon.setOnClickListener(v -> {
+            int originalPosition = songs.indexOf(music);
+            if (removeSongListener != null) {
+                removeSongListener.onRemoveSong(originalPosition);
+            }
         });
 
         return convertView;
@@ -125,5 +136,9 @@ public class PlaylistAdapter extends ArrayAdapter<Music> {
                 notifyDataSetChanged();
             }
         };
+    }
+
+    public interface RemoveSongListener {
+        void onRemoveSong(int position);
     }
 }

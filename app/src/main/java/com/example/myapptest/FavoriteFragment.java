@@ -29,7 +29,7 @@ import java.io.OutputStream; // 添加这行
 import java.util.ArrayList;
 import java.util.List;
 
-public class FavoriteFragment extends Fragment implements FavoriteToggleListener { // 实现接口
+public class FavoriteFragment extends Fragment implements FavoriteToggleListener, PlaylistAdapter.RemoveSongListener { // 实现接口
 
     private static final String TAG = "FavoriteFragment";
     private static final int REQUEST_CREATE_FILE = 2; // 添加这行
@@ -122,8 +122,7 @@ public class FavoriteFragment extends Fragment implements FavoriteToggleListener
     private void updateFavoriteListView() {
         if (getContext() == null) return;
         
-        // 将第三个参数从 null 改为 this
-        adapter = new PlaylistAdapter(getContext(), favoriteSongs, this);
+        adapter = new PlaylistAdapter(getContext(), favoriteSongs, this, this);
         favoriteListView.setAdapter(adapter);
 
         if (favoriteSongs.isEmpty()) {
@@ -266,5 +265,26 @@ public class FavoriteFragment extends Fragment implements FavoriteToggleListener
         intent.addCategory(Intent.CATEGORY_OPENABLE);
         intent.setType("text/plain");
         startActivityForResult(intent, REQUEST_IMPORT_FILE);
+    }
+
+    @Override
+    public void onRemoveSong(int position) {
+        // 实现移除歌曲的逻辑
+        Music music = favoriteSongs.get(position);
+        music.isFavorite = false;
+        
+        AppDatabase db = AppDatabase.getDatabase(getContext());
+        MusicDao musicDao = db.musicDao();
+
+        new Thread(() -> {
+            musicDao.updateMusic(music);
+            if (getActivity() != null) {
+                getActivity().runOnUiThread(() -> {
+                    favoriteSongs.remove(position);
+                    adapter.notifyDataSetChanged();
+                    Toast.makeText(getContext(), "已从喜爱中移除", Toast.LENGTH_SHORT).show();
+                });
+            }
+        }).start();
     }
 }

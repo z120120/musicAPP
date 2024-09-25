@@ -18,13 +18,14 @@ import androidx.fragment.app.Fragment;
 import java.util.ArrayList;
 import java.util.List;
 
-public class PlaylistFragment extends Fragment implements FavoriteToggleListener { // 实现接口
+public class PlaylistFragment extends Fragment implements FavoriteToggleListener, PlaylistAdapter.RemoveSongListener { // 实现接口
 
     private static final String TAG = "PlaylistFragment";
     private ListView playlistView;
     private List<Music> playlistSongs;
     private PlaylistAdapter adapter;
     private EditText searchBar; // 添加搜索框
+    private int currentPlaylistId; // 添加这个字段来存储当前播放列表的ID
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
@@ -72,7 +73,8 @@ public class PlaylistFragment extends Fragment implements FavoriteToggleListener
             try {
                 MusicCollection defaultCollection = musicDao.getDefaultCollection();
                 if (defaultCollection != null) {
-                    List<Music> songs = musicDao.getMusicInCollection(defaultCollection.id);
+                    currentPlaylistId = defaultCollection.id; // 设置当前播放列表ID
+                    List<Music> songs = musicDao.getMusicInCollection(currentPlaylistId);
                     if (getActivity() != null) {
                         getActivity().runOnUiThread(() -> {
                             playlistSongs.clear();
@@ -108,7 +110,7 @@ public class PlaylistFragment extends Fragment implements FavoriteToggleListener
     private void updatePlaylistView() {
         if (getContext() == null) return;
         
-        adapter = new PlaylistAdapter(getContext(), playlistSongs, this);
+        adapter = new PlaylistAdapter(getContext(), playlistSongs, this, this);
         playlistView.setAdapter(adapter);
 
         if (playlistSongs.isEmpty()) {
@@ -172,6 +174,27 @@ public class PlaylistFragment extends Fragment implements FavoriteToggleListener
             requireActivity().runOnUiThread(() -> {
                 Toast.makeText(getContext(), "已添加到歌单", Toast.LENGTH_SHORT).show();
             });
+        }).start();
+    }
+
+    @Override
+    public void onRemoveSong(int position) {
+        // 实现移除歌曲的逻辑
+        Music music = playlistSongs.get(position);
+        
+        AppDatabase db = AppDatabase.getDatabase(getContext());
+        MusicDao musicDao = db.musicDao();
+
+        new Thread(() -> {
+            // 从播放列表中移除歌曲
+            musicDao.deletePlaylistSong(currentPlaylistId, music.id);
+            if (getActivity() != null) {
+                getActivity().runOnUiThread(() -> {
+                    playlistSongs.remove(position);
+                    adapter.notifyDataSetChanged();
+                    Toast.makeText(getContext(), "已从播放列表中移除", Toast.LENGTH_SHORT).show();
+                });
+            }
         }).start();
     }
 }
