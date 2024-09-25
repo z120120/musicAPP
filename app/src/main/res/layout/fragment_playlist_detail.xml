@@ -5,40 +5,29 @@
     android:orientation="vertical"
     android:padding="16dp">
 
-    <TextView
-        android:id="@+id/playlist_name"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:textSize="24sp"
-        android:textStyle="bold"
-        android:layout_marginBottom="16dp"/>
-
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal">
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:layout_marginBottom="16dp">
 
-        <Button
-            android:id="@+id/btn_export_playlist"
+        <TextView
+            android:id="@+id/playlist_name"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="导出歌单" />
+            android:textSize="24sp"
+            android:textStyle="bold"/>
 
-        <Button
-            android:id="@+id/btn_import_playlist"
-            android:layout_width="0dp"
+        <ImageButton
+            android:id="@+id/btn_more_options"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="导入歌单" />
-
-        <Button
-            android:id="@+id/btn_clear_playlist"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="清空歌单" />
-
+            android:src="@drawable/ic_more_vert"
+            android:contentDescription="更多选项"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:padding="8dp"/>
     </LinearLayout>
 
     <ListView

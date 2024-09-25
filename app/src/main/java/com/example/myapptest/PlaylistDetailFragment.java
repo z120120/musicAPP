@@ -8,10 +8,13 @@ import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Bundle;
 import android.view.LayoutInflater;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Button;
+import android.widget.ImageButton;
 import android.widget.ListView;
+import android.widget.PopupMenu;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -75,26 +78,8 @@ public class PlaylistDetailFragment extends Fragment implements FavoriteToggleLi
             playMusic(position);
         });
 
-        Button exportButton = view.findViewById(R.id.btn_export_playlist);
-        exportButton.setOnClickListener(v -> {
-            if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.WRITE_EXTERNAL_STORAGE)
-                    != PackageManager.PERMISSION_GRANTED) {
-                ActivityCompat.requestPermissions(requireActivity(),
-                        new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, REQUEST_WRITE_STORAGE);
-            } else {
-                exportPlaylist();
-            }
-        });
-
-        Button importButton = view.findViewById(R.id.btn_import_playlist);
-        importButton.setOnClickListener(v -> {
-            Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
-            intent.setType("text/plain");
-            startActivityForResult(intent, REQUEST_IMPORT_FILE);
-        });
-
-        Button clearPlaylistButton = view.findViewById(R.id.btn_clear_playlist);
-        clearPlaylistButton.setOnClickListener(v -> showClearPlaylistConfirmation());
+        ImageButton moreOptionsButton = view.findViewById(R.id.btn_more_options);
+        moreOptionsButton.setOnClickListener(v -> showMoreOptions(v));
 
         songListView.setOnItemLongClickListener((parent, view1, position, id) -> {
             onRemoveSong(position);
@@ -318,5 +303,34 @@ public class PlaylistDetailFragment extends Fragment implements FavoriteToggleLi
                 });
             }
         }).start();
+    }
+
+    private void showMoreOptions(View v) {
+        PopupMenu popup = new PopupMenu(getContext(), v);
+        MenuInflater inflater = popup.getMenuInflater();
+        inflater.inflate(R.menu.playlist_detail_options_menu, popup.getMenu());
+
+        popup.setOnMenuItemClickListener(item -> {
+            int itemId = item.getItemId();
+            if (itemId == R.id.menu_export_playlist) {
+                exportPlaylist();
+                return true;
+            } else if (itemId == R.id.menu_import_playlist) {
+                importPlaylist();
+                return true;
+            } else if (itemId == R.id.menu_clear_playlist) {
+                showClearPlaylistConfirmation();
+                return true;
+            }
+            return false;
+        });
+
+        popup.show();
+    }
+
+    private void importPlaylist() {
+        Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
+        intent.setType("text/plain");
+        startActivityForResult(intent, REQUEST_IMPORT_FILE);
     }
 }
