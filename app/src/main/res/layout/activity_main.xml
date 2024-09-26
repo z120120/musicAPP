@@ -17,15 +17,16 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:padding="8dp"
         android:visibility="gone"
+        android:padding="8dp"
         app:layout_constraintBottom_toTopOf="@+id/bottom_navigation">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
-            android:gravity="center_vertical">
+            android:gravity="center_vertical"
+            android:padding="8dp">
 
             <ImageView
                 android:id="@+id/mini_player_album_art"
@@ -65,20 +66,7 @@
                 android:src="@drawable/ic_next"
                 android:background="?attr/selectableItemBackgroundBorderless" />
 
-            <ImageButton
-                android:id="@+id/play_mode_button"
-                android:layout_width="36dp"
-                android:layout_height="36dp"
-                android:src="@drawable/ic_repeat"
-                android:background="?attr/selectableItemBackgroundBorderless" />
-
-            <!-- 移除这个喜欢按钮 -->
-            <!-- <ImageButton
-                android:id="@+id/mini_favorite_button"
-                android:layout_width="36dp"
-                android:layout_height="36dp"
-                android:src="@drawable/ic_favorite_border"
-                android:background="?attr/selectableItemBackgroundBorderless" /> -->
+            <!-- 删除播放模式按钮 -->
 
         </LinearLayout>
 

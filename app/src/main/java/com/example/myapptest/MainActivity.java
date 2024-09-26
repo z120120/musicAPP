@@ -59,7 +59,8 @@ public class MainActivity extends AppCompatActivity implements BottomNavigationV
     private ImageButton playPauseButton;
     private ImageButton previousButton;
     private ImageButton nextButton;
-    private ImageButton playModeButton;
+    // 删除这行
+    // private ImageButton playModeButton;
     private int playMode = 0; // 0: 列表循环, 1: 单曲循环, 2: 随机播放
 
     private SeekBar seekBar;
@@ -94,7 +95,8 @@ public class MainActivity extends AppCompatActivity implements BottomNavigationV
         playPauseButton = findViewById(R.id.play_pause_button);
         previousButton = findViewById(R.id.previous_button);
         nextButton = findViewById(R.id.next_button);
-        playModeButton = findViewById(R.id.play_mode_button);
+        // 删除这行
+        // playModeButton = findViewById(R.id.play_mode_button);
         seekBar = findViewById(R.id.seek_bar);
         currentTimeView = findViewById(R.id.current_time);
         totalTimeView = findViewById(R.id.total_time);
@@ -103,12 +105,13 @@ public class MainActivity extends AppCompatActivity implements BottomNavigationV
 
         // 初始化 PlayerController
         ImageView miniPlayerAlbumArt = findViewById(R.id.mini_player_album_art); // 添加这行来获取迷你播放器的专辑封面 ImageView
-        playerController = new PlayerController(this, null, songTitleView, playPauseButton, playModeButton, seekBar, currentTimeView, totalTimeView, artistView, albumView, miniPlayerAlbumArt);
+        playerController = new PlayerController(this, null, songTitleView, playPauseButton, null, seekBar, currentTimeView, totalTimeView, artistView, albumView, miniPlayerAlbumArt);
 
         playPauseButton.setOnClickListener(v -> playerController.togglePlayPause());
         previousButton.setOnClickListener(v -> playerController.playPrevious());
         nextButton.setOnClickListener(v -> playerController.playNext());
-        playModeButton.setOnClickListener(v -> playerController.changePlayMode());
+        // 删除这行
+        // playModeButton.setOnClickListener(v -> playerController.changePlayMode());
 
         seekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
@@ -276,7 +279,8 @@ public class MainActivity extends AppCompatActivity implements BottomNavigationV
         if (serviceBound && playbackService != null) {
             playerController.updateSongTitle();
             playerController.updatePlayPauseButton();
-            playerController.updatePlayModeButton();
+            // 删除这行
+            // playerController.updatePlayModeButton();
             miniPlayer.setVisibility(View.VISIBLE);
         }
     }
