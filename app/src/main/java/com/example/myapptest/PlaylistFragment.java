@@ -29,6 +29,8 @@ public class PlaylistFragment extends Fragment implements FavoriteToggleListener
     private PlaylistAdapter adapter;
     private EditText searchBar;
     private int currentPlaylistId;
+    private ImageButton locateCurrentSongButton;
+    private PlaybackService playbackService;
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
@@ -66,6 +68,15 @@ public class PlaylistFragment extends Fragment implements FavoriteToggleListener
 
         ImageButton moreOptionsButton = view.findViewById(R.id.btn_more_options);
         moreOptionsButton.setOnClickListener(v -> showMoreOptions(v));
+
+        locateCurrentSongButton = view.findViewById(R.id.btn_locate_current_song);
+        locateCurrentSongButton.setOnClickListener(v -> locateCurrentSong());
+
+        // 获取 PlaybackService 实例
+        MainActivity activity = (MainActivity) getActivity();
+        if (activity != null) {
+            playbackService = activity.getPlaybackService();
+        }
 
         return view;
     }
@@ -306,5 +317,32 @@ public class PlaylistFragment extends Fragment implements FavoriteToggleListener
         });
 
         popup.show();
+    }
+
+    private void locateCurrentSong() {
+        if (playbackService != null) {
+            Music currentMusic = playbackService.getCurrentMusic();
+            if (currentMusic != null) {
+                int position = -1;
+                for (int i = 0; i < playlistSongs.size(); i++) {
+                    if (playlistSongs.get(i).id == currentMusic.id) {
+                        position = i;
+                        break;
+                    }
+                }
+                if (position != -1) {
+                    playlistView.smoothScrollToPosition(position);
+                    Toast.makeText(getContext(), "已定位到当前播放歌曲", Toast.LENGTH_SHORT).show();
+                } else {
+                    String message = String.format("当前播放的歌曲 '%s' 不在列表中", currentMusic.title);
+                    Toast.makeText(getContext(), message, Toast.LENGTH_LONG).show();
+                    Log.d(TAG, "locateCurrentSong: " + message);
+                }
+            } else {
+                Toast.makeText(getContext(), "当前没有正在播放的歌曲", Toast.LENGTH_SHORT).show();
+            }
+        } else {
+            Toast.makeText(getContext(), "播放服务未连接", Toast.LENGTH_SHORT).show();
+        }
     }
 }

@@ -277,4 +277,8 @@ public class MainActivity extends AppCompatActivity implements BottomNavigationV
             miniPlayer.setVisibility(View.VISIBLE);
         }
     }
+
+    public PlaybackService getPlaybackService() {
+        return playbackService;
+    }
 }

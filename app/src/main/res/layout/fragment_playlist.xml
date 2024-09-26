@@ -19,6 +19,16 @@
             android:textSize="24sp"
             android:layout_weight="1"/>
 
+        <!-- 添加定位图标 -->
+        <ImageButton
+            android:id="@+id/btn_locate_current_song"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:src="@drawable/ic_my_location"
+            android:contentDescription="定位到当前播放歌曲"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:padding="8dp"/>
+
         <ImageButton
             android:id="@+id/btn_more_options"
             android:layout_width="wrap_content"
