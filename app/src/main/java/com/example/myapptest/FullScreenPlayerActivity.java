@@ -15,10 +15,23 @@ import android.graphics.Bitmap;
 import android.widget.ImageView;
 import android.graphics.drawable.GradientDrawable;
 import java.util.Random;
+import java.util.List;
+import android.widget.ArrayAdapter;
+import androidx.appcompat.app.AlertDialog;
 
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.os.Handler;
+
+import com.example.myapptest.model.Playlist;
+import com.example.myapptest.model.PlaylistSong;
+
+import com.example.myapptest.Music; // 如果 Music 类在主包中
+// 或者
+// import com.example.myapptest.model.Music; // 如果 Music 类在 model 包中
+
+import com.example.myapptest.database.AppDatabase; // 确保这个导入语句存在
+import com.example.myapptest.database.MusicDao; // 确保这个导入语句存在
 
 public class FullScreenPlayerActivity extends AppCompatActivity implements PlaybackService.OnSongChangeListener {
 
@@ -34,6 +47,7 @@ public class FullScreenPlayerActivity extends AppCompatActivity implements Playb
     private TextView totalTimeView;
     private ImageView albumArtView;
     private ImageButton fullScreenFavoriteButton;
+    private ImageButton fullScreenAddToPlaylistButton;
 
     private PlaybackService playbackService;
     private boolean serviceBound = false;
@@ -98,6 +112,9 @@ public class FullScreenPlayerActivity extends AppCompatActivity implements Playb
 
             // 初始化时更新专辑图片
             updateAlbumArt();
+
+            fullScreenAddToPlaylistButton = findViewById(R.id.full_screen_add_to_playlist_button);
+            fullScreenAddToPlaylistButton.setOnClickListener(v -> showAddToPlaylistDialog());
 
         } catch (Exception e) {
             Log.e("FullScreenPlayerActivity", "初始化全屏播放器时出错", e);
@@ -306,5 +323,49 @@ public class FullScreenPlayerActivity extends AppCompatActivity implements Playb
     @Override
     public void onFavoriteStatusChanged(boolean isFavorite) {
         runOnUiThread(this::updateFavoriteButton);
+    }
+
+    private void showAddToPlaylistDialog() {
+        if (playbackService == null) return;
+
+        Music currentMusic = playbackService.getCurrentMusic();
+        if (currentMusic == null) return;
+
+        AppDatabase db = AppDatabase.getDatabase(this);
+        MusicDao musicDao = db.musicDao();
+
+        new Thread(() -> {
+            List<Playlist> playlists = musicDao.getAllPlaylists();
+            runOnUiThread(() -> {
+                AlertDialog.Builder builder = new AlertDialog.Builder(this);
+                builder.setTitle("添加到歌单");
+
+                ArrayAdapter<String> playlistAdapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1);
+                for (Playlist playlist : playlists) {
+                    playlistAdapter.add(playlist.name);
+                }
+
+                builder.setAdapter(playlistAdapter, (dialog, which) -> {
+                    Playlist selectedPlaylist = playlists.get(which);
+                    addMusicToPlaylist(currentMusic, selectedPlaylist.id);
+                });
+
+                builder.setNegativeButton("取消", (dialog, which) -> dialog.dismiss());
+                builder.show();
+            });
+        }).start();
+    }
+
+    private void addMusicToPlaylist(Music music, int playlistId) {
+        AppDatabase db = AppDatabase.getDatabase(this);
+        MusicDao musicDao = db.musicDao();
+
+        new Thread(() -> {
+            PlaylistSong playlistSong = new PlaylistSong(playlistId, music.id);
+            musicDao.insertPlaylistSong(playlistSong);
+            runOnUiThread(() -> {
+                Toast.makeText(this, "已添加到歌单", Toast.LENGTH_SHORT).show();
+            });
+        }).start();
     }
 }
