@@ -21,7 +21,7 @@ import androidx.fragment.app.Fragment;
 import java.util.ArrayList;
 import java.util.List;
 
-public class PlaylistFragment extends Fragment implements FavoriteToggleListener, PlaylistAdapter.RemoveSongListener {
+public class PlaylistFragment extends Fragment implements FavoriteToggleListener, PlaylistAdapter.RemoveSongListener, PlaybackService.OnCurrentSongChangeListener {
 
     private static final String TAG = "PlaylistFragment";
     private ListView playlistView;
@@ -343,6 +343,43 @@ public class PlaylistFragment extends Fragment implements FavoriteToggleListener
             }
         } else {
             Toast.makeText(getContext(), "播放服务未连接", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    @Override
+    public void onCurrentSongChange(Music currentSong) {
+        if (adapter != null) {
+            int position = playlistSongs.indexOf(currentSong);
+            adapter.setCurrentPlayingPosition(position);
+        }
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        MainActivity activity = (MainActivity) getActivity();
+        if (activity != null) {
+            PlaybackService playbackService = activity.getPlaybackService();
+            if (playbackService != null) {
+                playbackService.setOnCurrentSongChangeListener(this);
+                // 更新当前播放歌曲的高亮状态
+                Music currentSong = playbackService.getCurrentMusic();
+                if (currentSong != null) {
+                    onCurrentSongChange(currentSong);
+                }
+            }
+        }
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+        MainActivity activity = (MainActivity) getActivity();
+        if (activity != null) {
+            PlaybackService playbackService = activity.getPlaybackService();
+            if (playbackService != null) {
+                playbackService.setOnCurrentSongChangeListener(null);
+            }
         }
     }
 }

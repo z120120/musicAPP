@@ -34,6 +34,7 @@ public class PlaybackService extends Service implements MediaPlayer.OnCompletion
     private int lastPosition = 0; // 添加这个字段来保存暂停时的位置
     private boolean isChangingSong = false;
     private boolean isPrepared = false;
+    private OnCurrentSongChangeListener currentSongChangeListener;
 
     public class LocalBinder extends Binder {
         PlaybackService getService() {
@@ -177,6 +178,7 @@ public class PlaybackService extends Service implements MediaPlayer.OnCompletion
                     mp.start();
                     Log.d(TAG, "playMusic: 音乐开始播放，duration: " + mp.getDuration());
                     notifySongChange(music.title); // 通知歌曲变化
+                    notifyCurrentSongChange(music);
                 });
                 // 移除这里的 setOnCompletionListener，因为我们已经在 onCreate 中设置了全局的 OnCompletionListener
             } catch (IOException e) {
@@ -353,5 +355,19 @@ public class PlaybackService extends Service implements MediaPlayer.OnCompletion
             }
         }
         return null;
+    }
+
+    public interface OnCurrentSongChangeListener {
+        void onCurrentSongChange(Music currentSong);
+    }
+
+    public void setOnCurrentSongChangeListener(OnCurrentSongChangeListener listener) {
+        this.currentSongChangeListener = listener;
+    }
+
+    private void notifyCurrentSongChange(Music currentSong) {
+        if (currentSongChangeListener != null) {
+            currentSongChangeListener.onCurrentSongChange(currentSong);
+        }
     }
 }

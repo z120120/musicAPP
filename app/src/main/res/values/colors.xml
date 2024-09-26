@@ -7,12 +7,14 @@
     <color name="teal_700">#FF018786</color>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
-    <color name="background_color">#121212</color>
-    <color name="text_color_primary">#FFFFFF</color>
-    <color name="text_color_secondary">#B3FFFFFF</color>
+    <color name="background_color">#FFFFFF</color>
+    <color name="text_color_primary">#333333</color>
+    <color name="text_color_secondary">#666666</color>
     <color name="accent_color">#1DB954</color>
-    <color name="icon_color">#FFFFFF</color>
+    <color name="icon_color">#333333</color>
     <!-- 其他颜色定义 -->
     <color name="gradient_start">#3F51B5</color>
     <color name="gradient_end">#9C27B0</color>
+    <color name="highlight_color">#80DEEA</color>
+    <color name="text_color_highlight">#1DB954</color> <!-- 使用强调色作为高亮文字颜色 -->
 </resources>

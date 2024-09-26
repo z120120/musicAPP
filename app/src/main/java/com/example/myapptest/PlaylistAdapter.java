@@ -11,6 +11,7 @@ import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.core.content.ContextCompat;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -22,6 +23,7 @@ public class PlaylistAdapter extends ArrayAdapter<Music> {
     private final List<Music> filteredSongs; // 添加过滤后的歌曲列表
     private final FavoriteToggleListener listener; // 使用接口
     private final RemoveSongListener removeSongListener; // 添加这个接口
+    private int currentPlayingPosition = -1; // 添加变量来跟踪当前播放的歌曲位置
 
     public PlaylistAdapter(Context context, List<Music> songs, FavoriteToggleListener listener, RemoveSongListener removeSongListener) { // 修改构造函数
         super(context, R.layout.list_item_playlist, songs);
@@ -30,6 +32,12 @@ public class PlaylistAdapter extends ArrayAdapter<Music> {
         this.filteredSongs = new ArrayList<>(songs); // 初始化过滤后的歌曲列表
         this.listener = listener; // 赋值接口
         this.removeSongListener = removeSongListener;
+    }
+
+    // 添加一个方法来更新当前播放的位置
+    public void setCurrentPlayingPosition(int position) {
+        this.currentPlayingPosition = position;
+        notifyDataSetChanged();
     }
 
     @NonNull
@@ -68,6 +76,13 @@ public class PlaylistAdapter extends ArrayAdapter<Music> {
                 removeSongListener.onRemoveSong(originalPosition);
             }
         });
+
+        // 修改高亮逻辑
+        if (position == currentPlayingPosition) {
+            holder.titleTextView.setTextColor(ContextCompat.getColor(context, R.color.text_color_highlight));
+        } else {
+            holder.titleTextView.setTextColor(ContextCompat.getColor(context, R.color.text_color_primary));
+        }
 
         return convertView;
     }
