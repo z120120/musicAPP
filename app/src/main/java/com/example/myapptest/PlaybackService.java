@@ -18,6 +18,8 @@ import java.io.File;
 import java.io.IOException;
 import java.util.List;
 import java.util.Random;
+import android.os.Handler;
+import android.os.Looper;
 
 import com.example.myapptest.utils.FileUtils;
 
@@ -148,6 +150,7 @@ public class PlaybackService extends Service implements MediaPlayer.OnCompletion
     public interface OnSongChangeListener {
         void onSongChange(String title);
         void onAutoPlayNext(String title); // 添加这个新方法
+        void onFavoriteStatusChanged(boolean isFavorite); // 添加这个方法
     }
 
     private OnSongChangeListener songChangeListener;
@@ -368,6 +371,25 @@ public class PlaybackService extends Service implements MediaPlayer.OnCompletion
     private void notifyCurrentSongChange(Music currentSong) {
         if (currentSongChangeListener != null) {
             currentSongChangeListener.onCurrentSongChange(currentSong);
+        }
+    }
+
+    public void toggleFavorite() {
+        Music currentMusic = getCurrentMusic();
+        if (currentMusic != null) {
+            currentMusic.isFavorite = !currentMusic.isFavorite;
+            // 更新数据库
+            AppDatabase db = AppDatabase.getDatabase(this);
+            MusicDao musicDao = db.musicDao();
+            new Thread(() -> {
+                musicDao.updateMusic(currentMusic);
+                // 通知监听器
+                if (songChangeListener != null) {
+                    new Handler(Looper.getMainLooper()).post(() -> 
+                        songChangeListener.onFavoriteStatusChanged(currentMusic.isFavorite)
+                    );
+                }
+            }).start();
         }
     }
 }

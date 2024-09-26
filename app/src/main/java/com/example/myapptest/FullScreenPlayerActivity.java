@@ -33,6 +33,7 @@ public class FullScreenPlayerActivity extends AppCompatActivity implements Playb
     private TextView currentTimeView;
     private TextView totalTimeView;
     private ImageView albumArtView;
+    private ImageButton fullScreenFavoriteButton;
 
     private PlaybackService playbackService;
     private boolean serviceBound = false;
@@ -47,6 +48,12 @@ public class FullScreenPlayerActivity extends AppCompatActivity implements Playb
             playerController.setPlaybackService(playbackService);
             initializePlayerController();
             updateAlbumArt(); // 在服务连接后立即更新专辑图片
+            
+            // 设置歌曲变化监听器
+            playbackService.setOnSongChangeListener(FullScreenPlayerActivity.this);
+            
+            // 初始化时更新喜欢按钮状态
+            updateFavoriteButton();
         }
 
         @Override
@@ -131,6 +138,7 @@ public class FullScreenPlayerActivity extends AppCompatActivity implements Playb
         currentTimeView = findViewById(R.id.full_screen_current_time);
         totalTimeView = findViewById(R.id.full_screen_total_time);
         albumArtView = findViewById(R.id.full_screen_album_art);
+        fullScreenFavoriteButton = findViewById(R.id.full_screen_favorite_button);
 
         // 检查是否所有视图都正确初始化
         if (songTitleView == null || artistView == null || albumView == null ||
@@ -183,6 +191,8 @@ public class FullScreenPlayerActivity extends AppCompatActivity implements Playb
             playerController.playNext();
         });
         playModeButton.setOnClickListener(v -> playerController.changePlayMode());
+
+        fullScreenFavoriteButton.setOnClickListener(v -> toggleFavorite());
 
         // 设置进度条监听器
         seekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
@@ -242,6 +252,7 @@ public class FullScreenPlayerActivity extends AppCompatActivity implements Playb
             Log.d("FullScreenPlayerActivity", "歌曲变化，更新UI: " + title);
             playerController.updateUIForNewSong();
             updateAlbumArt();
+            updateFavoriteButton(); // 添加这行
         });
     }
 
@@ -251,6 +262,7 @@ public class FullScreenPlayerActivity extends AppCompatActivity implements Playb
             Log.d("FullScreenPlayerActivity", "自动播放下一首，更新UI: " + title);
             playerController.updateUIForNewSong();
             updateAlbumArt();
+            updateFavoriteButton(); // 添加这行
         });
     }
 
@@ -268,5 +280,31 @@ public class FullScreenPlayerActivity extends AppCompatActivity implements Playb
         if (playerController != null) {
             playerController.stopProgressUpdate();
         }
+    }
+
+    private void toggleFavorite() {
+        if (playbackService != null) {
+            playbackService.toggleFavorite();
+        }
+    }
+
+    private void updateFavoriteButton() {
+        if (playbackService != null) {
+            Music currentMusic = playbackService.getCurrentMusic();
+            if (currentMusic != null) {
+                fullScreenFavoriteButton.setImageResource(currentMusic.isFavorite ? 
+                    R.drawable.ic_favorite : R.drawable.ic_favorite_border);
+            }
+        }
+    }
+
+    private void updateUIForNewSong() {
+        // ... 现有代码 ...
+        updateFavoriteButton();
+    }
+
+    @Override
+    public void onFavoriteStatusChanged(boolean isFavorite) {
+        runOnUiThread(this::updateFavoriteButton);
     }
 }

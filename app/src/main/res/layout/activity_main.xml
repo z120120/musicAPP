@@ -71,6 +71,15 @@
                 android:layout_height="36dp"
                 android:src="@drawable/ic_repeat"
                 android:background="?attr/selectableItemBackgroundBorderless" />
+
+            <!-- 移除这个喜欢按钮 -->
+            <!-- <ImageButton
+                android:id="@+id/mini_favorite_button"
+                android:layout_width="36dp"
+                android:layout_height="36dp"
+                android:src="@drawable/ic_favorite_border"
+                android:background="?attr/selectableItemBackgroundBorderless" /> -->
+
         </LinearLayout>
 
         <LinearLayout

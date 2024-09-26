@@ -42,6 +42,9 @@ public class MainActivity extends AppCompatActivity implements BottomNavigationV
             
             // 设置歌曲变化监听器
             playbackService.setOnSongChangeListener(MainActivity.this);
+            
+            // 删除这行
+            // updateFavoriteButton();
         }
 
         @Override
@@ -281,4 +284,19 @@ public class MainActivity extends AppCompatActivity implements BottomNavigationV
     public PlaybackService getPlaybackService() {
         return playbackService;
     }
+
+    @Override
+    public void onFavoriteStatusChanged(boolean isFavorite) {
+        // 主界面不需要处理喜欢状态的变化，所以这里可以留空
+        // 或者可以添加日志
+        Log.d(TAG, "Favorite status changed: " + isFavorite);
+    }
+
+    // 删除这个方法
+    /*
+    @Override
+    public void onFavoriteStatusChanged(boolean isFavorite) {
+        Log.d(TAG, "收到喜欢状态变化通知: " + (isFavorite ? "喜欢" : "不喜欢"));
+    }
+    */
 }

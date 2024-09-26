@@ -110,6 +110,14 @@
             android:src="@drawable/ic_next"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:tint="@color/black" />
+
+        <ImageButton
+            android:id="@+id/full_screen_favorite_button"
+            android:layout_width="64dp"
+            android:layout_height="64dp"
+            android:src="@drawable/ic_favorite_border"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:tint="@null" />
     </LinearLayout>
 
     <ImageButton
