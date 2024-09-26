@@ -23,15 +23,11 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import android.os.Handler;
 
-import com.example.myapptest.model.Playlist;
-import com.example.myapptest.model.PlaylistSong;
-
-import com.example.myapptest.Music; // 如果 Music 类在主包中
-// 或者
-// import com.example.myapptest.model.Music; // 如果 Music 类在 model 包中
-
-import com.example.myapptest.database.AppDatabase; // 确保这个导入语句存在
-import com.example.myapptest.database.MusicDao; // 确保这个导入语句存在
+import com.example.myapptest.Playlist;
+import com.example.myapptest.PlaylistSong;
+import com.example.myapptest.AppDatabase;
+import com.example.myapptest.MusicDao;
+import com.example.myapptest.Music;
 
 public class FullScreenPlayerActivity extends AppCompatActivity implements PlaybackService.OnSongChangeListener {
 
